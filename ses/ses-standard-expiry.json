@@ -1,0 +1,8 @@
+{
+  "Template": {
+    "TemplateName": "StandardExpiry",
+    "SubjectPart": "[onwhichdate] A document's due",
+    "TextPart": "A date's due!\nHeads-up!\nYour item: {{documentName}} is due in {{dueInDays}}, on {{dueDate}}. We thought you should know!\nAdditional notes you entered: {{additionalNotes}}\n{{referenceLinks}}\nWe hope that helped you!\nNote:\nJust head over to https://onwhichdate.com to make any changes\nThanks,\nfrom your friendly helpers @ owd.\n\n{{sponsoredLinks}}\n",
+    "HtmlPart": "<h1>A date&#39;s due!</h1>\n<p>Heads-up!</p>\n<p>Your item: {{documentName}} is due in {{dueInDays}}, on {{dueDate}}. We thought you should know!</p>\n<p>Additional notes you entered: {{additionalNotes}}</p>\n<p>{{referenceLinks}}</p>\n<p>We hope that helped you!</p>\n<p>Note:</p>\n<p>Just head over to <a href=\"https://onwhichdate.com\">https://onwhichdate.com</a> to make any changes</p>\n<p>Thanks,</p>\n<p>from your friendly helpers @ owd.</p>\n<hr>\n<p>{{sponsoredLinks}}</p>\n"
+  }
+}
