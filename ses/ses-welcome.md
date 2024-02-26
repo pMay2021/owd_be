@@ -1,17 +1,27 @@
-# Welcome to OnWhichDate
 
-Thank you for creating an account at OnWhichDate.com! Your login account is {{email}}. We have no passwords! Whenever you need to login, enter your email and fill the one-time code e-mailed to you. Even better, just use SMS text for quick additions.
+Dear {{name}},
 
-Let's get started. Head over to [https://onwhichdate.com](https://onwhichdate.com) and add some some important documents to get started. We suggest:
+Welcome to OnWhichDate.com! Your login account is:
+
+` {{email}}` 
+
+We have no passwords! Whenever you need to login, enter your email and click the magic link sent to you. This is secure, and you never have to store and remember a password for us.
+
+To get started, head over to [https://onwhichdate.com](https://onwhichdate.com) and add a few important documents to get started. We suggest:
 
 1. passport
 2. driving license
 3. mobile phone subscription
 
-Play around the account and set your defaults, they'll help you save a ton of time!
+Some more tips:
 
-We hope to serve you years to come!
+1. go to [account](https://onwhichdate.com/account) to set some defaults, they'll save you time.
+3. visit [tips](https://onwhichdate.com/tips) for some cool techniques that'll save you even more time!
+4. check out [our plans](https://onwhichdate.com/plans) - they're amazingly affordable.
+5. we're always listening; got suggestions or issues? go to [support](https://onwhichdate.com/support) to submit them.
+
+We hope to serve you years to come,
 
 sincerely, 
 
-OWD team.
+team OWD!
