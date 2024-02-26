@@ -13,6 +13,7 @@ const input = {
   },
   FeedbackForwardingEmailAddress: "bounce@onwhichdate.com",
   Content: { 
+    /*
     Simple: { 
       Subject: { 
         Data: "A test message from here", // required
@@ -23,13 +24,13 @@ const input = {
         },
       },
     },
-    /*
-    Template: { // Template
-      TemplateName: "STRING_VALUE",
-      TemplateArn: "STRING_VALUE",
-      TemplateData: "STRING_VALUE",
-    },
     */
+    
+    Template: { // Template
+      TemplateName: "OWDWelcome",
+      TemplateData: JSON.stringify({"email": "m.venugopal@gmail.com"})
+    },
+    
   },
   /*
   EmailTags: [ // MessageTagList
