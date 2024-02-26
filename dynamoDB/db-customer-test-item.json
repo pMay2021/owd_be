@@ -1,0 +1,42 @@
+{
+    "cid": {
+      "S": "cZ9vKlkdJuKNeMdqr2"
+    },
+    "cellNumber": {
+      "S": "+14258675309"
+    },
+    "countryCode": {
+      "S": "CA"
+    },
+    "email": {
+      "S": "jane.smith@example.com"
+    },
+    "isCellVerified": {
+      "BOOL": true
+    },
+    "magicCode": {
+      "S": "yH5mP"
+    },
+    "registrationDate": {
+      "S": "2024-04-10"
+    },
+    "sendEmail": {
+      "BOOL": true
+    },
+    "sendSMS": {
+      "BOOL": true
+    },
+    "state": {
+      "S": "ON"
+    },
+    "subscriptionEndDate": {
+      "S": "2025-04-10"
+    },
+    "subscriptionStatus": {
+      "S": "active"
+    },
+    "subscriptionType": {
+      "S": "personal"
+    }
+  }
+  

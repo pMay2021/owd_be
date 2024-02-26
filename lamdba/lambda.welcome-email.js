@@ -2,12 +2,14 @@ import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2"; // ES Mod
 
 export const handler = async (event, context) => {
   const client = new SESv2Client({ region: "us-east-1" });
-  const logStr = `${context.functionName} : processing for ${JSON.stringify(event)}`
+  const logStr = `${context.functionName} : ${JSON.stringify(event)}`
   console.log(logStr);
 
   //let's get the input values
-  const email = event.email || "m.venugopal@gmail.com";
-  const name = event.name || email;
+  const email =  "m.venugopal@gmail.com";
+  
+  const cid = event.Records[0].dynamodb.Keys.cid.S;
+  const name = cid +" # " + event.name || email;
 
   const data = {
     email: email,

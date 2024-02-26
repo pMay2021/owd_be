@@ -10,3 +10,7 @@ aws ses create-template --cli-input-json file://ses/TestTemplate.json
 # to update an existing template: just use the input json file
 aws ses update-template  --cli-input-json file://ses/ses-welcome.json 
 
+
+
+## DynamoDB references
+base CID: xuVbNjdkLuImnKd
