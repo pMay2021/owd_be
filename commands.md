@@ -7,17 +7,19 @@
 ## to create a new template
 aws ses create-template --cli-input-json file://ses/TestTemplate.json
 
-# to update an existing template: just use the input json file
+## to update an existing template: just use the input json file
 aws ses update-template  --cli-input-json file://ses/ses-welcome.json 
 
-# insert an item into DynamoDB
+## get an item from dynamoDB
+aws dynamodb get-item --table-name db-customer --key '{"cid": {"S": "xuVbNjdkLuImnKd"}}'
+
+## insert an item into DynamoDB
 aws dynamodb put-item --table-name "db-customer" --item file://dynamoDB/db-customer-test-item.json
 
 ## DynamoDB references
 base CID: xuVbNjdkLuImnKd
 
-
-# API Gateway
+## API Gateway
 
 format: https://api-id.execute-api.region.amazonaws.com/stage
 
