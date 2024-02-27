@@ -12,6 +12,7 @@ aws ses update-template  --cli-input-json file://ses/ses-welcome.json
 
 ## get an item from dynamoDB
 aws dynamodb get-item --table-name db-customer --key '{"cid": {"S": "xuVbNjdkLuImnKd"}}'
+aws dynamodb get-item --table-name "db-document" --key '{"id": {"S": "travel#passport#us"}, "state": {"S": "na"}}'
 
 ## insert an item into DynamoDB
 aws dynamodb put-item --table-name "db-customer" --item file://dynamoDB/db-customer-test-item.json
