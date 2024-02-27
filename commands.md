@@ -15,3 +15,11 @@ aws dynamodb put-item --table-name "db-customer" --item file://dynamoDB/db-custo
 
 ## DynamoDB references
 base CID: xuVbNjdkLuImnKd
+
+
+# API Gateway
+
+format: https://api-id.execute-api.region.amazonaws.com/stage
+
+= https://rzgoq22zk5.execute-api.us-east-1.amazonaws.com/dev
+
