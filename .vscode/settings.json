@@ -2,5 +2,5 @@
   "editor.wordWrap": "on",
   "editor.wordWrapColumn": 80,
   "editor.fontFamily": " 'JetBrains Mono','Cascadia Code', Monaco, 'Fira Code'",
-  "editor.fontSize": 12,
+  "editor.fontSize": 10,
 }
