@@ -1,0 +1,16 @@
+{
+    "pk": "travel#passport",
+    "sk": "us#na",
+    "documentName": "Passport",
+    "importance": "critical",
+    "category": "Travel Documents",
+    "description": "Official document for international travel requiring periodic renewal",
+    "countryFlag": "🇺🇸",
+    "renewalIntervalYears": [5, 10],
+    "referenceURL": "https://travel.state.gov/content/travel/en/passports.html",
+    "processingTime": "4-6 weeks",
+    "reminderOffsetDays": [0, 30, 60, 180],
+    "relatedIds": ["travel#visa", "immigration#I-140"],
+    "notes": ""
+  }
+  
