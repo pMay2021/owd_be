@@ -26,3 +26,20 @@ format: https://api-id.execute-api.region.amazonaws.com/stage
 
 = https://rzgoq22zk5.execute-api.us-east-1.amazonaws.com/dev
 
+## deploying self-made layers
+
+1. put it in a folder, e.g., `owd-lib-layer`
+2. Structure the folders exactly as below, with the zip containing `nodejs/` and below
+3. After deploying, use the import as `import * as owd from '/opt/nodejs/node20/owd.mjs'`
+
+
+~~~
+├── nodejs
+│   └── node20
+│       ├── node_modules
+│       │   └── nanoid
+│       ├── owd.mjs
+│       └── package.json
+└── owdlib.zip
+
+~~~

@@ -1,6 +1,6 @@
 {
   "editor.wordWrap": "on",
   "editor.wordWrapColumn": 80,
-  "editor.fontFamily": "'Fira Code', Bookerly, 'Adobe Caslon Pro', Bookerly",
+  "editor.fontFamily": " 'JetBrains Mono','Cascadia Code', Monaco, 'Fira Code'",
   "editor.fontSize": 12,
 }
