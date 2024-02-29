@@ -29,8 +29,9 @@ format: https://api-id.execute-api.region.amazonaws.com/stage
 ## deploying self-made layers
 
 1. put it in a folder, e.g., `owd-lib-layer`
-2. Structure the folders exactly as below, with the zip containing `nodejs/` and below
-3. After deploying, use the import as `import * as owd from '/opt/nodejs/node20/owd.mjs'`
+3. Structure the folders exactly as below, with the zip containing `nodejs/` and below
+4. Zip it as `zip -r owdlib.zip . `
+5. After deploying, use the import as `import * as owd from '/opt/nodejs/node20/owd.mjs'`
 
 
 ~~~
