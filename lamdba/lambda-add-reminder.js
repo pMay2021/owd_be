@@ -1,88 +1,86 @@
-// The Lambda function calculates reminder dates by taking an expiry date and list of number of days offsets as input. It parses the expiry date, loops through the offsets array, and calculates the reminder dates by adding each offset to the expiry date.
-import { DynamoDBClient, GetItemCommand } from "@aws-sdk/client-dynamodb";
-function getDayOfWeek(dateString) {
-    // Validate input data
-    if (!dateString) {
-      throw new Error("Invalid input: dateString is required");
-    }
-  
-    // Parse the date string
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      throw new Error("Invalid date format");
-    }
-  
-    // Get the day of the week index (0-6, where 0 is Sunday)
-    const dayOfWeekIndex = date.getDay();
-  
-    // Convert the index to a day name using an array
-    const daysOfWeek = ["Sun", "Mon", "Tues", "Wed", "Thurs", "Fri", "Sat"];
-    return daysOfWeek[dayOfWeekIndex];
-  }
+// Import necessary AWS SDK clients and commands
 
-function calculateDates(expiryDate, daysList) {
-    // Validate input data (same as your original code)
-    console.log(`function calculateDates: expiryDate: ${expiryDate} and offsets: ${JSON.stringify(daysList)}`);
-    if (!expiryDate || !Array.isArray(daysList)) {
-      throw new Error("Invalid input data: expiryDate or daysList");
-    }
-  
-    // Parse expiry date to a Date object (same as your original code)
-    const parsedDate = new Date(expiryDate);
-    if (isNaN(parsedDate.getTime())) {
-      throw new Error("Invalid expiry date format");
-    }
-  
-    // Calculate new dates for each day in the list
-    const newDates = daysList.map(days => {
-      const newDate = new Date(parsedDate.getTime());
-      newDate.setDate(newDate.getDate() - days);
-  
-      // Get day of the week in words (using the previous function)
-      const dayOfWeek = getDayOfWeek(newDate.toISOString()); // Pass date as ISO string
-  
-      return {
-        date: newDate.toISOString().slice(0, 10), // Format as YYYY-MM-dd
-        dayOfWeek: dayOfWeek,
-        offsetNumber: days
-      };
-    });
-  
-    return newDates;
-  }
+import { DynamoDBClient, GetItemCommand } from "@aws-sdk/client-dynamodb";
+import * as owd from "/opt/nodejs/node20/owd.mjs";
+
+const getDocument = async (client, pk, sk) => {
+  const params = { TableName: "db-document", Key: { pk: { S: pk }, sk: { S: sk } } };
+
+  // Create a command to get the item
+  const command = new GetItemCommand(params);
+
+  // Send the command to DynamoDB
+  const data = await client.send(command);
+
+  return data.Item;
+};
+
+const getCustomer = async (cid) => {
+  const client = new DynamoDBClient({ region: "us-east-1" });
+
+  const params = { TableName: "db-customer", Key: { pk: { S: cid } } };
+
+  // Create a command to get the item
+  const command = new GetItemCommand(params);
+
+  // Send the command to DynamoDB
+  const data = await client.send(command);
+
+  return data.Item;
+};
 
 // The Lambda handler function
 export const handler = async (event, context) => {
   // Initialize DynamoDB client
   const client = new DynamoDBClient({ region: "us-east-1" });
 
+  const cid = "cZ9vKlkdJuKNeMdr4"; //fixed for testing
   try {
     // Extract id and state from the event object
-    const { id, state, expiresOn } = event;
-    console.log(`${context.functionName}: received event: ${JSON.stringify(event)}: id = ${id} and state = ${state}`);
+    const { id, loc, expiresOn } = event;
+    console.log(`${context.functionName}: received event: ${JSON.stringify(event)}: id = ${id} and location = ${loc}`);
+    const customerDb = await getCustomer(cid);
+    console.log("retrieved customer details:");
 
-    // Create parameters for DynamoDB get-item
-    const params = { TableName: "db-document", Key: { id: { S: id }, state: { S: state } } };
+    console.log(customerDb);
+    // get the necessary information, doc and user profile
+    const docDb = await getDocument(client, id, loc);
+    console.log("retrieved document details:");
+    console.log(docDb);
 
-    // Create a command to get the item
-    const command = new GetItemCommand(params);
+    // compute the notice dates from the expiry and offsets
+    let offsetArray = docDb.reminderOffsetDays.L.map((x) => x.N);
+    const newDates = owd.getOffsetDates(expiresOn, offsetArray);
+    console.log("computed notice dates:");
+    console.log(newDates);
 
-    // Send the command to DynamoDB
-    const data = await client.send(command);
+    // now construct the notice json
 
-    // We now have the document related details. Let's use the reminderIntervals
-    // to compute three dates that correspond to the period between now and then
-    let offsetArray = data.Item.reminderOffsetDays.L.map((x) => x.N);
-    const newDates = calculateDates(expiresOn, offsetArray);
-    console.log(`received notice dates: ${newDates}`)
-    const retJson = { "notices" : newDates, "link" : data.Item.referenceURL.S };
+    const noticeItem = {
+      pk: newDates[1].date,
+      sk: cid + owd.getShortId(6), //use cid and a short id for unique sort key
+      addedOn: new Date().toISOString(),
+      isParent: true, //whether this is the original expiry entry
+      originalExpiryOn: newDates[0].date,
+      documentId: docDb.pk.S + "." + docDb.sk.S, //we want to get the latest about the docs at the time of notice send
+      sendSMS: event.sendSMS, //based on the user's preference at the time of creation
+      sendEmail: event.sendEmail, //based on the user's preference at the time of creation
+      sendPush: event.sendPush, //based on the user's preference at the time of creation
+      sendWhatsapp: event.sendWhatsapp, //based on the user's preference at the time of creation
+      notes: "", //added by customer at the time of creation
+    };
+
+    console.log("created notice entry::");
+    console.log(noticeItem);
+
+    const retJson = { notices: newDates, link: docDb.referenceURL.S };
 
     // Return a successful response
     return {
       statusCode: 200,
       body: JSON.stringify({
         message: "Record retrieved successfully.",
-        data: retJson
+        data: retJson,
       }),
       headers: {
         "Content-Type": "application/json",

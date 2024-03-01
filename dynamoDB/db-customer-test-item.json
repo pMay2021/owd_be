@@ -1,42 +1,16 @@
 {
-    "cid": {
-      "S": "cZ9vKlkdJuKNeMdr4"
-    },
-    "cellNumber": {
-      "S": "+14258675309"
-    },
-    "countryCode": {
-      "S": "CA"
-    },
-    "email": {
-      "S": "jane.smith@example.com"
-    },
-    "isCellVerified": {
-      "BOOL": true
-    },
-    "magicCode": {
-      "S": "yH5mP"
-    },
-    "registrationDate": {
-      "S": "2024-04-10"
-    },
-    "sendEmail": {
-      "BOOL": true
-    },
-    "sendSMS": {
-      "BOOL": true
-    },
-    "state": {
-      "S": "ON"
-    },
-    "subscriptionEndDate": {
-      "S": "2025-04-10"
-    },
-    "subscriptionStatus": {
-      "S": "active"
-    },
-    "subscriptionType": {
-      "S": "personal"
-    }
-  }
-  
+    "pk": {"S": "cZ9vKlkdJuKNeMdr4"},
+    "cellNumber": {"S": "+14258675309"},
+    "countryCode": {"S": "US"},
+    "state": {"S": "TX"},
+    "email": {"S": "m.venugopal@example.com"},
+    "isCellVerified": {"BOOL": true},
+    "registrationDate": {"S": "2024-04-10"},
+    "subscriptionEndDate": {"S": "2025-04-10"},
+    "subscriptionStatus": {"S": "active"},
+    "subscriptionType": {"S": "personal"},
+    "magicCode": {"S": "yH5maLnMXeFhSYP"},
+    "magicCodeExpiresAt": {"S": "2024-04-10T12:00:00Z"},
+    "sendEmail": {"BOOL": true},
+    "sendSMS": {"BOOL": true}
+}
