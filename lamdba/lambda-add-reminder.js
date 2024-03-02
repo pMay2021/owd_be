@@ -7,7 +7,7 @@ const putItemInTable = async (tableName, item) => {
   const params = {
     TableName: tableName,
     ReturnConsumedCapacity: "TOTAL",
-    Item: item
+    Item: item,
   };
 
   const command = new PutItemCommand(params);
@@ -19,7 +19,7 @@ const putItemInTable = async (tableName, item) => {
 const getDocument = async (client, pk, sk) => {
   const params = {
     TableName: "db-document",
-    Key: { pk: { S: pk }, sk: { S: sk } }
+    Key: { pk: { S: pk }, sk: { S: sk } },
   };
 
   const command = new GetItemCommand(params);
@@ -33,7 +33,7 @@ const getCustomer = async (cid) => {
 
   const params = {
     TableName: "db-customer",
-    Key: { pk: { S: cid } }
+    Key: { pk: { S: cid } },
   };
 
   const command = new GetItemCommand(params);
@@ -43,24 +43,35 @@ const getCustomer = async (cid) => {
 };
 
 export const handler = async (event, context) => {
-  console.log("Executing lambda-get-reminder on: " + new Date().toISOString());
+  console.log("Executing lambda-get-reminder on: " + new Date().toISOString() + " owd lib version: " + owd.getVersion().version);
+  const { id, loc, expiresOn } = event;
+  owd.log(event, `${context.functionName}: received event`);
 
   const client = new DynamoDBClient({ region: "us-east-1" });
   const cid = "cZ9vKlkdJuKNeMdr4"; // Fixed for testing
 
   try {
-    const { id, loc, expiresOn } = event;
-    console.log(`${context.functionName}: received event: ${JSON.stringify(event)}: id = ${id} and location = ${loc}`);
+    
+    // Validate input parameters
+    if (!id || !loc || !expiresOn) {
+      throw new Error("Missing required parameters.");
+    }
 
     const customerDb = await getCustomer(cid);
+    if (!customerDb) {
+      throw new Error("Customer not found.");
+    }
     console.log("Retrieved customer details:");
 
     const docDb = await getDocument(client, id, loc);
+    if (!docDb) {
+      throw new Error("Document not found.");
+    }
     console.log("Retrieved document details:");
 
     const offsetArray = docDb.reminderOffsetDays.L.map((x) => x.N);
     const newDates = owd.getOffsetDates(expiresOn, offsetArray);
-    console.log("Computed notice dates:");
+    owd.log("Notice dates:", newDates)
 
     const noticeItem = {
       pk: { S: newDates[1].date + "#" + new Date().getHours() },
@@ -70,7 +81,7 @@ export const handler = async (event, context) => {
       addedOn: { S: new Date().toISOString() },
       isParent: { BOOL: true },
       originalExpiryOn: { S: newDates[0].date },
-      documentId: { S: docDb.pk.S + "." + docDb.sk.S },
+      documentId: { S: docDb.pk.S + "|" + docDb.sk.S },
       sendSMS: { BOOL: event.sendSMS },
       sendEmail: { BOOL: event.sendEmail },
       sendPush: { BOOL: event.sendPush },
@@ -79,12 +90,10 @@ export const handler = async (event, context) => {
       notes: { S: "" },
     };
 
-    console.log("Constructed notice entry:");
-    console.log(noticeItem);
-
+    owd.log("Constructed notice entry:");
+    
     const resp = await putItemInTable("db-notice", noticeItem);
-    console.log("Created notice entry:");
-    console.log(resp);
+    owd.log(resp, "Created notice entry");
 
     const retJson = { notices: newDates, link: docDb.referenceURL.S };
 
