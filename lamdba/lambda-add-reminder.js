@@ -71,29 +71,29 @@ export const handler = async (event, context) => {
 
     const offsetArray = docDb.reminderOffsetDays.L.map((x) => x.N);
     const newDates = owd.getOffsetDates(expiresOn, offsetArray);
-    owd.log("Notice dates:", newDates)
+    for (const date of newDates) {
+      const noticeItem = {
+        pk: { S: date.date + "#" + new Date().getHours().toString().padStart(2, '0')},
+        sk: { S: cid + "#" + owd.getShortId(6) },
+        cid: { S: cid },
+        isAlreadySent: { BOOL: false },
+        addedOn: { S: new Date().toISOString() },
+        isParent: { BOOL: true },
+        originalExpiryOn: { S: newDates[0].date },
+        documentId: { S: docDb.pk.S + "|" + docDb.sk.S },
+        sendSMS: { BOOL: event.sendSMS },
+        sendEmail: { BOOL: event.sendEmail },
+        sendPush: { BOOL: event.sendPush },
+        sendWhatsapp: { BOOL: event.sendWhatsapp },
+        additionalSends: { S: JSON.stringify(event.additionalSends) },
+        notes: { S: event.notes },
+      };
 
-    const noticeItem = {
-      pk: { S: newDates[1].date + "#" + new Date().getHours() },
-      sk: { S: cid + "#" + owd.getShortId(6) },
-      cid: { S: cid },
-      isAlreadySent: { BOOL: false },
-      addedOn: { S: new Date().toISOString() },
-      isParent: { BOOL: true },
-      originalExpiryOn: { S: newDates[0].date },
-      documentId: { S: docDb.pk.S + "|" + docDb.sk.S },
-      sendSMS: { BOOL: event.sendSMS },
-      sendEmail: { BOOL: event.sendEmail },
-      sendPush: { BOOL: event.sendPush },
-      sendWhatsapp: { BOOL: event.sendWhatsapp },
-      additionalSends: { S: JSON.stringify(event.additionalSends) },
-      notes: { S: "" },
-    };
+      owd.log("Constructed notice entry:");
 
-    owd.log("Constructed notice entry:");
-    
-    const resp = await putItemInTable("db-notice", noticeItem);
-    owd.log(resp, "Created notice entry");
+      const resp = await putItemInTable("db-notice", noticeItem);
+      owd.log(resp, "Created notice entry");
+    }
 
     const retJson = { notices: newDates, link: docDb.referenceURL.S };
 
@@ -120,3 +120,4 @@ export const handler = async (event, context) => {
     };
   }
 };
+
