@@ -1,81 +1,93 @@
-// Import necessary AWS SDK clients and commands
-
-import { DynamoDBClient, GetItemCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, GetItemCommand, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import * as owd from "/opt/nodejs/node20/owd.mjs";
 
+const putItemInTable = async (tableName, item) => {
+  const client = new DynamoDBClient({ region: "us-east-1" });
+
+  const params = {
+    TableName: tableName,
+    ReturnConsumedCapacity: "TOTAL",
+    Item: item
+  };
+
+  const command = new PutItemCommand(params);
+  const response = await client.send(command);
+
+  return response;
+};
+
 const getDocument = async (client, pk, sk) => {
-  const params = { TableName: "db-document", Key: { pk: { S: pk }, sk: { S: sk } } };
+  const params = {
+    TableName: "db-document",
+    Key: { pk: { S: pk }, sk: { S: sk } }
+  };
 
-  // Create a command to get the item
   const command = new GetItemCommand(params);
+  const response = await client.send(command);
 
-  // Send the command to DynamoDB
-  const data = await client.send(command);
-
-  return data.Item;
+  return response.Item;
 };
 
 const getCustomer = async (cid) => {
   const client = new DynamoDBClient({ region: "us-east-1" });
 
-  const params = { TableName: "db-customer", Key: { pk: { S: cid } } };
+  const params = {
+    TableName: "db-customer",
+    Key: { pk: { S: cid } }
+  };
 
-  // Create a command to get the item
   const command = new GetItemCommand(params);
+  const response = await client.send(command);
 
-  // Send the command to DynamoDB
-  const data = await client.send(command);
-
-  return data.Item;
+  return response.Item;
 };
 
-// The Lambda handler function
 export const handler = async (event, context) => {
-  // Initialize DynamoDB client
-  const client = new DynamoDBClient({ region: "us-east-1" });
+  console.log("Executing lambda-get-reminder on: " + new Date().toISOString());
 
-  const cid = "cZ9vKlkdJuKNeMdr4"; //fixed for testing
+  const client = new DynamoDBClient({ region: "us-east-1" });
+  const cid = "cZ9vKlkdJuKNeMdr4"; // Fixed for testing
+
   try {
-    // Extract id and state from the event object
     const { id, loc, expiresOn } = event;
     console.log(`${context.functionName}: received event: ${JSON.stringify(event)}: id = ${id} and location = ${loc}`);
+
     const customerDb = await getCustomer(cid);
-    console.log("retrieved customer details:");
+    console.log("Retrieved customer details:");
 
-    console.log(customerDb);
-    // get the necessary information, doc and user profile
     const docDb = await getDocument(client, id, loc);
-    console.log("retrieved document details:");
-    console.log(docDb);
+    console.log("Retrieved document details:");
 
-    // compute the notice dates from the expiry and offsets
-    let offsetArray = docDb.reminderOffsetDays.L.map((x) => x.N);
+    const offsetArray = docDb.reminderOffsetDays.L.map((x) => x.N);
     const newDates = owd.getOffsetDates(expiresOn, offsetArray);
-    console.log("computed notice dates:");
-    console.log(newDates);
-
-    // now construct the notice json
+    console.log("Computed notice dates:");
 
     const noticeItem = {
-      pk: newDates[1].date,
-      sk: cid + owd.getShortId(6), //use cid and a short id for unique sort key
-      addedOn: new Date().toISOString(),
-      isParent: true, //whether this is the original expiry entry
-      originalExpiryOn: newDates[0].date,
-      documentId: docDb.pk.S + "." + docDb.sk.S, //we want to get the latest about the docs at the time of notice send
-      sendSMS: event.sendSMS, //based on the user's preference at the time of creation
-      sendEmail: event.sendEmail, //based on the user's preference at the time of creation
-      sendPush: event.sendPush, //based on the user's preference at the time of creation
-      sendWhatsapp: event.sendWhatsapp, //based on the user's preference at the time of creation
-      notes: "", //added by customer at the time of creation
+      pk: { S: newDates[1].date + "#" + new Date().getHours() },
+      sk: { S: cid + "#" + owd.getShortId(6) },
+      cid: { S: cid },
+      isAlreadySent: { BOOL: false },
+      addedOn: { S: new Date().toISOString() },
+      isParent: { BOOL: true },
+      originalExpiryOn: { S: newDates[0].date },
+      documentId: { S: docDb.pk.S + "." + docDb.sk.S },
+      sendSMS: { BOOL: event.sendSMS },
+      sendEmail: { BOOL: event.sendEmail },
+      sendPush: { BOOL: event.sendPush },
+      sendWhatsapp: { BOOL: event.sendWhatsapp },
+      additionalSends: { S: JSON.stringify(event.additionalSends) },
+      notes: { S: "" },
     };
 
-    console.log("created notice entry::");
+    console.log("Constructed notice entry:");
     console.log(noticeItem);
+
+    const resp = await putItemInTable("db-notice", noticeItem);
+    console.log("Created notice entry:");
+    console.log(resp);
 
     const retJson = { notices: newDates, link: docDb.referenceURL.S };
 
-    // Return a successful response
     return {
       statusCode: 200,
       body: JSON.stringify({
