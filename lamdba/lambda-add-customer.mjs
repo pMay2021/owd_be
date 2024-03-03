@@ -1,7 +1,5 @@
-// works and inserts into table
-
 import * as owd from "/opt/nodejs/node20/owd.mjs";
-import { DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
+import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 
 const isValidEmail = (email) => {
   email = email.toLowerCase().trim();
@@ -15,25 +13,6 @@ const getCountryFromLanguage = (lang) => {
 };
 
 
-const putItemInTable = async (tableName, item) => {
-  const client = new DynamoDBClient({ region: "us-east-1" });
-
-  const params = {
-    TableName: tableName,
-    ReturnConsumedCapacity: "TOTAL",
-    Item: item,
-  };
-
-  const command = new PutItemCommand(params);
-  
-  owd.log(params, "about to insert:")
-  const response = await client.send(command);
-
-  return response;
-};
-
-
-
 /**
  * Checks if a customer is already registered based on the provided email.
  * Throws an error if the customer is already registered.
@@ -42,46 +21,43 @@ const putItemInTable = async (tableName, item) => {
  * @throws {Error} - Throws an error if the customer is already registered.
  */
 const isCustomerRegistered = async (email) => {
-  const client = new DynamoDBClient({ region: "us-east-1" });
-  const params = {
-    TableName: "db-customer",
-    IndexName: "email-index",
-    KeyConditionExpression: "email = :email",
-    ExpressionAttributeValues: {
-      ":email": { S: email },
-    },
-  };
-
-  const command = new QueryCommand(params);
-
-  const response = await client.send(command);
-  if (response.Count > 0) {
+  
+  const items = await owd.getItemByGSI("db-customer", "email-index", "email = :email", {":email": { S: email }} );
+  
+  if (items.length > 0) {
     throw new Error(email + ": you're already registered; check your email for a login link.");
     // TODO send magic link email or reverification email
   }
+  
+  owd.log(items, "customerReg response:")
+  return items;
+  
 };
 
+// TODO this is for POST only, and invoked when customer clicks mail reg (new reg), we need a separate email for first timers
+
 export const handler = async (event, context) => {
-  owd.log(event, "Incoming event:");
-  owd.log(context, "Incoming context:", false);
+  owd.log(event, "Incoming event:", false);
+  owd.log(owd.getVersion(), "\nLib version:");
 
   //let's normalize the email
   const email = event.email.toLowerCase().trim();
-
-  // what if the customer already exists in our database?
-  await isCustomerRegistered(email);
 
   // basic checks and ensure from legit email address
   if (!isValidEmail(email) || isDisposable(email)) {
     throw new Error(email + ": please use a valid email and non-disposable domain.");
   }
-
+  
+  // what if the customer already exists in our database?
+  const isRegistered = await isCustomerRegistered(email);
+  
   const country = getCountryFromLanguage(event.lang ?? "us");
 
   // create the cid that maps the email to a customer
   const cid = owd.getShortId(15);
-  const today = new Date();
   owd.log("customer is unregistered, valid email - we'll go ahead: " + email + " cid: " + cid);
+  
+  const today = new Date();
 
   //compute trial expiry date
   const trialEndDate = new Date();
@@ -91,7 +67,7 @@ export const handler = async (event, context) => {
   // let's structure the dynamoDB item
   const item = {
       pk: { S: cid },
-      isVerified: { BOOL: false} , //this is critical. if 'no', then no further service available until they verify email to 'yes'
+      isVerified: { BOOL: true} , //this is critical. if 'no', then no further service available until they verify email to 'yes'
       cellNumber: { S: "+10000000000" },
       countryCode: { S: country },
       state: { S: "na" },
@@ -113,8 +89,11 @@ export const handler = async (event, context) => {
   owd.log(item, "Constructed db-customer item:", false);
   
   // now it's time to inser the item
-  const im = await putItemInTable("db-customer", item);
+  const im = await owd.putItem("db-customer", item);
   owd.log(im, "inserted item in customer table");
+  
+  // now send a welcome email
+  // TODO
 
   const response = {
     statusCode: 200,

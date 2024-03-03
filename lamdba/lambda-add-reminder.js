@@ -1,47 +1,6 @@
 import { DynamoDBClient, GetItemCommand, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import * as owd from "/opt/nodejs/node20/owd.mjs";
 
-const putItemInTable = async (tableName, item) => {
-  const client = new DynamoDBClient({ region: "us-east-1" });
-
-  const params = {
-    TableName: tableName,
-    ReturnConsumedCapacity: "TOTAL",
-    Item: item,
-  };
-
-  const command = new PutItemCommand(params);
-  const response = await client.send(command);
-
-  return response;
-};
-
-const getDocument = async (client, pk, sk) => {
-  const params = {
-    TableName: "db-document",
-    Key: { pk: { S: pk }, sk: { S: sk } },
-  };
-
-  const command = new GetItemCommand(params);
-  const response = await client.send(command);
-
-  return response.Item;
-};
-
-const getCustomer = async (cid) => {
-  const client = new DynamoDBClient({ region: "us-east-1" });
-
-  const params = {
-    TableName: "db-customer",
-    Key: { pk: { S: cid } },
-  };
-
-  const command = new GetItemCommand(params);
-  const response = await client.send(command);
-
-  return response.Item;
-};
-
 export const handler = async (event, context) => {
   console.log("Executing lambda-get-reminder on: " + new Date().toISOString() + " owd lib version: " + owd.getVersion().version);
   const { id, loc, expiresOn } = event;
@@ -51,29 +10,31 @@ export const handler = async (event, context) => {
   const cid = "cZ9vKlkdJuKNeMdr4"; // Fixed for testing
 
   try {
-    
     // Validate input parameters
     if (!id || !loc || !expiresOn) {
       throw new Error("Missing required parameters.");
     }
 
-    const customerDb = await getCustomer(cid);
+    const customerDb = await owd.getItem("db-customer", cid);
+
     if (!customerDb) {
       throw new Error("Customer not found.");
     }
-    console.log("Retrieved customer details:");
+    owd.log(customerDb, "\nRetrieved customer details:");
 
-    const docDb = await getDocument(client, id, loc);
+    const docDb = await owd.getItem("db-document", id, loc);
     if (!docDb) {
       throw new Error("Document not found.");
     }
-    console.log("Retrieved document details:");
+    owd.log(docDb, "\nRetrieved document details:");
 
     const offsetArray = docDb.reminderOffsetDays.L.map((x) => x.N);
     const newDates = owd.getOffsetDates(expiresOn, offsetArray);
+
     for (const date of newDates) {
+      const hour = new Date().getHours().toString().padStart(2, "0");
       const noticeItem = {
-        pk: { S: date.date + "#" + new Date().getHours().toString().padStart(2, '0')},
+        pk: { S: date.date + "#" + hour },
         sk: { S: cid + "#" + owd.getShortId(6) },
         cid: { S: cid },
         isAlreadySent: { BOOL: false },
@@ -89,10 +50,9 @@ export const handler = async (event, context) => {
         notes: { S: event.notes },
       };
 
-      owd.log("Constructed notice entry:");
+      owd.log(noticeItem, "\nConstructed notice entry for:", false);
 
-      const resp = await putItemInTable("db-notice", noticeItem);
-      owd.log(resp, "Created notice entry");
+      const resp = await owd.putItem("db-notice", noticeItem);
     }
 
     const retJson = { notices: newDates, link: docDb.referenceURL.S };
@@ -100,7 +60,7 @@ export const handler = async (event, context) => {
     return {
       statusCode: 200,
       body: JSON.stringify({
-        message: "Record retrieved successfully.",
+        message: "Added reminders successfully!",
         data: retJson,
       }),
       headers: {
@@ -120,4 +80,3 @@ export const handler = async (event, context) => {
     };
   }
 };
-
