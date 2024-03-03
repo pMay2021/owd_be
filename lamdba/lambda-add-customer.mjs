@@ -1,5 +1,7 @@
 import * as owd from "/opt/nodejs/node20/owd.mjs";
 import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
+const ses = new SESv2Client({ region: "us-east-1" });
+const goModify = false;
 
 const isValidEmail = (email) => {
   email = email.toLowerCase().trim();
@@ -12,7 +14,6 @@ const getCountryFromLanguage = (lang) => {
   return "us";
 };
 
-
 /**
  * Checks if a customer is already registered based on the provided email.
  * Throws an error if the customer is already registered.
@@ -21,57 +22,88 @@ const getCountryFromLanguage = (lang) => {
  * @throws {Error} - Throws an error if the customer is already registered.
  */
 const isCustomerRegistered = async (email) => {
-  
-  const items = await owd.getItemByGSI("db-customer", "email-index", "email = :email", {":email": { S: email }} );
-  
-  if (items.length > 0) {
-    throw new Error(email + ": you're already registered; check your email for a login link.");
-    // TODO send magic link email or reverification email
-  }
-  
-  owd.log(items, "customerReg response:")
-  return items;
-  
+  const items = await owd.getItemByGSI("db-customer", "email-index", "email = :email", { ":email": { S: email } });
+  const status = items && items.length > 0;
+};
+
+const sendWelcomeEmail = async (email) => {
+  const devEmail = "m.venugopal@gmail.com";
+
+  const name = "subscriber"; // Replace with actual name if available
+  const data = { email, name };
+
+  const input = {
+    FromEmailAddress: "notice@onwhichdate.com",
+    Destination: {
+      ToAddresses: [devEmail], // Use actual email address in production
+    },
+    FeedbackForwardingEmailAddress: "bounce@onwhichdate.com",
+    Content: {
+      Template: {
+        TemplateName: "Welcome",
+        TemplateData: JSON.stringify(data),
+      },
+    },
+  };
+
+  // Send email using SES
+  const sesResponse = await ses.send(new SendEmailCommand(input));
+  owd.log(sesResponse, "sent email");
 };
 
 // TODO this is for POST only, and invoked when customer clicks mail reg (new reg), we need a separate email for first timers
 
 export const handler = async (event, context) => {
-  owd.log(event, "Incoming event:", false);
-  owd.log(owd.getVersion(), "\nLib version:");
+  const method = event.requestContext?.http.method;
+  let resp = { msg: "started..." };
 
-  //let's normalize the email
-  const email = event.email.toLowerCase().trim();
+  // let's establish some defaults.
 
-  // basic checks and ensure from legit email address
-  if (!isValidEmail(email) || isDisposable(email)) {
-    throw new Error(email + ": please use a valid email and non-disposable domain.");
-  }
-  
-  // what if the customer already exists in our database?
-  const isRegistered = await isCustomerRegistered(email);
-  
-  const country = getCountryFromLanguage(event.lang ?? "us");
+  owd.log(event, "Incoming event:", true);
+  owd.log(owd.getVersion(), "\nLib version (note: goModify = " + goModify + ")");
+  resp.event = event.body;
+  const body = JSON.parse(event.body);
 
-  // create the cid that maps the email to a customer
-  const cid = owd.getShortId(15);
-  owd.log("customer is unregistered, valid email - we'll go ahead: " + email + " cid: " + cid);
-  
-  const today = new Date();
+  try {
+    //let's normalize the email
+    const email = body.email.toLowerCase().trim();
 
-  //compute trial expiry date
-  const trialEndDate = new Date();
-  trialEndDate.setMonth(trialEndDate.getMonth() + 3, trialEndDate.getDate() + 1);
-  trialEndDate.setHours(0, 1, 0, 0);
+    // basic checks and ensure from legit email address
+    if (!isValidEmail(email) || isDisposable(email)) {
+      throw new Error(email + ": please use a valid email and non-disposable domain.");
+    }
 
-  // let's structure the dynamoDB item
-  const item = {
-      pk: { S: cid },
-      isVerified: { BOOL: true} , //this is critical. if 'no', then no further service available until they verify email to 'yes'
+    // what if the customer already exists in our database?
+    if (method === "POST") {
+      const isRegistered = await isCustomerRegistered(email);
+
+      if (isRegistered) {
+        return {
+          statusCode: 200,
+          body: JSON.stringify(resp) + "already registered, login instead=: " + isRegistered,
+        };
+      }
+    }
+
+    const country = getCountryFromLanguage(event.lang ?? "us");
+
+    const today = new Date();
+
+    //compute trial expiry date
+    const trialEndDate = new Date();
+    trialEndDate.setMonth(trialEndDate.getMonth() + 3, trialEndDate.getDate() + 1);
+    trialEndDate.setHours(0, 1, 0, 0);
+
+    resp.trialEnd = trialEndDate.toISOString();
+
+    const itemDefaults = {
+      pk: { S: owd.getShortId(15) },
+      email: { S: email },
+      name: { S: "subscriber" },
+      isVerified: { BOOL: true }, //this is critical. if 'no', then no further service available until they verify email to 'yes'
       cellNumber: { S: "+10000000000" },
       countryCode: { S: country },
       state: { S: "na" },
-      email: { S: email },
       isCellVerified: { BOOL: false },
       registrationDate: { S: today.toISOString() },
       subscriptionEndDate: { S: trialEndDate }, // free trials last 3 months
@@ -83,23 +115,65 @@ export const handler = async (event, context) => {
       sendSMS: { BOOL: false },
       sendWhatsapp: { BOOL: false },
       sendPush: { BOOL: false },
-      additionalEmails: { "SS": [""] } //for future implementation
-  };
+      additionalEmails: { SS: [""] }, //for future implementation
+    };
 
-  owd.log(item, "Constructed db-customer item:", false);
-  
-  // now it's time to inser the item
-  const im = await owd.putItem("db-customer", item);
-  owd.log(im, "inserted item in customer table");
-  
-  // now send a welcome email
-  // TODO
+    // let's structure the dynamoDB item
+    if (method === "POST") {
+      //create a new entry with defaults
+      owd.log(itemDefaults, "Constructed db-customer item:", false);
 
-  const response = {
-    statusCode: 200,
-    body: JSON.stringify("good email! " + email),
-  };
-  return response;
+      // now it's time to insert the item
+      if (goModify) {
+        const im = await owd.putItem("db-customer", itemDefaults);
+        owd.log(im, "inserted item in customer table");
+
+        // now send a welcome email
+        await sendWelcomeEmail(email);
+      }
+    } // end POST
+
+    if (method === "PUT") {
+      // this is for updates
+      const item = {
+        pk: { S: cid }, //we're only updating the customer's record
+        name: { S: body.name ?? itemDefaults.name.S },
+        cellNumber: { S: body.cellNumber ?? itemDefaults.cellNumber.S },
+        countryCode: { S: body.country },
+        state: { S: body.state ?? itemDefaults.state.S },
+        magicCode: { S: owd.getShortId() }, // generate a magic code to use as a link in magic links
+        magicCodeExpiresAt: { S: new Date(today.getTime() + 15 * 60000) }, //expires in 15 minutes
+        sendEmail: { BOOL: body.sendEmail },
+        sendSMS: { BOOL: body.sendSMS },
+        sendWhatsapp: { BOOL: body.sendWhatsapp },
+        sendPush: { BOOL: body.sendPush },
+        additionalEmails: { SS: body.sendAdditionalEmails ?? itemDefaults.additionalEmails.SS }, //for future implementation
+      };
+
+      owd.log(item, "Constructed db-customer item:", false);
+
+      // now it's time to insert the item
+      if (goModify) {
+        const im = await owd.putItem("db-customer", item);
+        owd.log(im, "inserted item in customer table");
+
+        // now send a welcome email
+        await sendWelcomeEmail(email);
+      }
+    }
+
+    const response = {
+      statusCode: 200,
+      body: JSON.stringify(resp),
+    };
+    return response;
+  } catch (error) {
+    const response = {
+      statusCode: 200,
+      body: JSON.stringify(error),
+    };
+    return response;
+  }
 };
 
 const isDisposable = (email) => {

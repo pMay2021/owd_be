@@ -1,0 +1,40 @@
+{
+    "version": "2.0",
+    "routeKey": "POST /customers",
+    "rawPath": "/customers",
+    "rawQueryString": "",
+    "headers": {
+        "accept": "*/*",
+        "accept-encoding": "gzip, deflate, br",
+        "cache-control": "no-cache",
+        "content-length": "71",
+        "content-type": "application/json",
+        "host": "8mjx9kwd7g.execute-api.us-east-1.amazonaws.com",
+        "postman-token": "d98a48a1-24f4-4d84-a90b-edcce516f07f",
+        "user-agent": "PostmanRuntime/7.36.3",
+        "x-amzn-trace-id": "Root=1-65e4c80f-794cd690760324511c4ef6b0",
+        "x-forwarded-for": "54.86.50.139",
+        "x-forwarded-port": "443",
+        "x-forwarded-proto": "https"
+    },
+    "requestContext": {
+        "accountId": "627389239307",
+        "apiId": "8mjx9kwd7g",
+        "domainName": "8mjx9kwd7g.execute-api.us-east-1.amazonaws.com",
+        "domainPrefix": "8mjx9kwd7g",
+        "http": {
+            "method": "POST",
+            "path": "/customers",
+            "protocol": "HTTP/1.1",
+            "sourceIp": "54.86.50.139",
+            "userAgent": "PostmanRuntime/7.36.3"
+        },
+        "requestId": "UEQyejd3IAMEJLw=",
+        "routeKey": "POST /customers",
+        "stage": "$default",
+        "time": "03/Mar/2024:18:57:19 +0000",
+        "timeEpoch": 1709492239532
+    },
+    "body": "{\n  \"email\": \"m.venugopal+owd3@gmail.com\",\n  \"acceptedTerms\" : \"true\"\n}",
+    "isBase64Encoded": false
+}
