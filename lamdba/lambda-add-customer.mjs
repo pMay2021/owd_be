@@ -143,7 +143,6 @@ export const handler = async (event, context) => {
 
       const item = {
         nickName: { S: nickName },
-        email: { S: body.email },
         cellNumber: { S: cellNumber },
         countryCode: { S: body.country },
         stateCode: { S: body.stateCode ?? itemDefaults.stateCode.S },
