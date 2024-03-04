@@ -1,9 +1,16 @@
+/*
+ * this code does both POST (clicked on magic link so we add new subscriber)
+ * and PUT (updating a record)
+ *
+ * change log
+ * ----------
+ * v1.0.0 basic version works.
+ */
+
+
 import * as owd from "/opt/nodejs/node20/owd.mjs";
 import * as db from "/opt/nodejs/node20/owddb.mjs";
 import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
-
-import { DynamoDBClient, UpdateItemCommand, PutItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
-const client = new DynamoDBClient({ region: "us-east-1" });
 
 const ses = new SESv2Client({ region: "us-east-1" });
 const goModify = true;
@@ -23,6 +30,7 @@ const getCountryFromLanguage = (lang) => {
 const isCustomerRegistered = async (email) => {
   const items = await db.getItemByGSI("db-customer", "email-index", "email = :email", { ":email": { S: email } });
   const status = items && items.length > 0;
+  return status;
 };
 
 const sendWelcomeEmail = async (email) => {
@@ -50,8 +58,6 @@ const sendWelcomeEmail = async (email) => {
   owd.log(sesResponse, "sent email");
 };
 
-// TODO this is for POST only, and invoked when customer clicks mail reg (new reg), we need a separate email for first timers
-
 export const handler = async (event, context) => {
   const method = event.requestContext?.http.method;
   let resp = { msg: "started..." };
@@ -66,9 +72,9 @@ export const handler = async (event, context) => {
   try {
     //let's normalize the email
     const email = body.email.toLowerCase().trim();
-
+    
     // basic checks and ensure from legit email address
-    if (!isValidEmail(email) || isDisposable(email)) {
+    if (!owd.isValidEmail(email) || isDisposable(email)) {
       throw new Error(email + ": please use a valid email and non-disposable domain.");
     }
 
@@ -79,7 +85,7 @@ export const handler = async (event, context) => {
       if (isRegistered) {
         return {
           statusCode: 200,
-          body: JSON.stringify(resp) + "already registered, login instead=: " + isRegistered,
+          body: JSON.stringify(resp) + "already registered, login instead."
         };
       }
     }
@@ -120,12 +126,12 @@ export const handler = async (event, context) => {
     // let's structure the dynamoDB item
     if (method === "POST") {
       //create a new entry with defaults
-      owd.log(itemDefaults, "Constructed db-customer item:", false);
+      owd.log(itemDefaults, "POST: Constructed db-customer item:", false);
 
       // now it's time to insert the item
       if (goModify) {
         const im = await db.putItem("db-customer", itemDefaults);
-        owd.log(im, "inserted item in customer table");
+        owd.log(im, "inserted item in customer table", true);
 
         // now send a welcome email
         await sendWelcomeEmail(email);
@@ -135,11 +141,11 @@ export const handler = async (event, context) => {
 
     if (method === "PUT") {
       // this is for updates
-
+console.log("inside PUT");
       // TODO conduct a full item verification or sanitization as needed
       // sanitize email, phoneNumber, nickName length etc.
       const nickName = body.nickName ? body.nickName.trim().substring(0, 10) : itemDefaults.nickName.S;
-      const cellNumber = normalizeCellNumber(body.cellNumber);
+      const cellNumber = owd.normalizeCellNumber(body.cellNumber);
 
       const item = {
         nickName: { S: nickName },
@@ -155,11 +161,11 @@ export const handler = async (event, context) => {
         additionalEmails: { SS: body.sendAdditionalEmails ?? itemDefaults.additionalEmails.SS }, //for future implementation
       };
 
-      owd.log(item);
+      owd.log(item, "\nupdate-item for cid:" + body.cid);
 
       // now it's time to insert the item
       if (goModify) {
-        const im = await updateItem("db-customer", item, body.cid);
+        const im = await db.updateItem("db-customer", item, body.cid);
         resp.msg = "PUT: updated customer record";
         owd.log(im, "updated db-customer:");
       }
