@@ -1,13 +1,12 @@
 import * as owd from "/opt/nodejs/node20/owd.mjs";
+import * as db from "/opt/nodejs/node20/owddb.mjs";
 import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
-const ses = new SESv2Client({ region: "us-east-1" });
-const goModify = false;
 
-const isValidEmail = (email) => {
-  email = email.toLowerCase().trim();
-  const re = /\S+@\S+\.\S+/;
-  return re.test(email);
-};
+import { DynamoDBClient, UpdateItemCommand, PutItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
+const client = new DynamoDBClient({ region: "us-east-1" });
+
+const ses = new SESv2Client({ region: "us-east-1" });
+const goModify = true;
 
 const getCountryFromLanguage = (lang) => {
   //TODO later
@@ -22,7 +21,7 @@ const getCountryFromLanguage = (lang) => {
  * @throws {Error} - Throws an error if the customer is already registered.
  */
 const isCustomerRegistered = async (email) => {
-  const items = await owd.getItemByGSI("db-customer", "email-index", "email = :email", { ":email": { S: email } });
+  const items = await db.getItemByGSI("db-customer", "email-index", "email = :email", { ":email": { S: email } });
   const status = items && items.length > 0;
 };
 
@@ -99,11 +98,11 @@ export const handler = async (event, context) => {
     const itemDefaults = {
       pk: { S: owd.getShortId(15) },
       email: { S: email },
-      name: { S: "subscriber" },
+      nickName: { S: "subscriber" },
       isVerified: { BOOL: true }, //this is critical. if 'no', then no further service available until they verify email to 'yes'
       cellNumber: { S: "+10000000000" },
       countryCode: { S: country },
-      state: { S: "na" },
+      stateCode: { S: "na" },
       isCellVerified: { BOOL: false },
       registrationDate: { S: today.toISOString() },
       subscriptionEndDate: { S: trialEndDate }, // free trials last 3 months
@@ -125,22 +124,29 @@ export const handler = async (event, context) => {
 
       // now it's time to insert the item
       if (goModify) {
-        const im = await owd.putItem("db-customer", itemDefaults);
+        const im = await db.putItem("db-customer", itemDefaults);
         owd.log(im, "inserted item in customer table");
 
         // now send a welcome email
         await sendWelcomeEmail(email);
       }
+      resp.msg = "inserted new verified record.";
     } // end POST
 
     if (method === "PUT") {
       // this is for updates
+
+      // TODO conduct a full item verification or sanitization as needed
+      // sanitize email, phoneNumber, nickName length etc.
+      const nickName = body.nickName ? body.nickName.trim().substring(0, 10) : itemDefaults.nickName.S;
+      const cellNumber = normalizeCellNumber(body.cellNumber);
+
       const item = {
-        pk: { S: cid }, //we're only updating the customer's record
-        name: { S: body.name ?? itemDefaults.name.S },
-        cellNumber: { S: body.cellNumber ?? itemDefaults.cellNumber.S },
+        nickName: { S: nickName },
+        email: { S: body.email },
+        cellNumber: { S: cellNumber },
         countryCode: { S: body.country },
-        state: { S: body.state ?? itemDefaults.state.S },
+        stateCode: { S: body.stateCode ?? itemDefaults.stateCode.S },
         magicCode: { S: owd.getShortId() }, // generate a magic code to use as a link in magic links
         magicCodeExpiresAt: { S: new Date(today.getTime() + 15 * 60000) }, //expires in 15 minutes
         sendEmail: { BOOL: body.sendEmail },
@@ -150,15 +156,13 @@ export const handler = async (event, context) => {
         additionalEmails: { SS: body.sendAdditionalEmails ?? itemDefaults.additionalEmails.SS }, //for future implementation
       };
 
-      owd.log(item, "Constructed db-customer item:", false);
+      owd.log(item);
 
       // now it's time to insert the item
       if (goModify) {
-        const im = await owd.putItem("db-customer", item);
-        owd.log(im, "inserted item in customer table");
-
-        // now send a welcome email
-        await sendWelcomeEmail(email);
+        const im = await updateItem("db-customer", item, body.cid);
+        resp.msg = "PUT: updated customer record";
+        owd.log(im, "updated db-customer:");
       }
     }
 
@@ -169,8 +173,8 @@ export const handler = async (event, context) => {
     return response;
   } catch (error) {
     const response = {
-      statusCode: 200,
-      body: JSON.stringify(error),
+      statusCode: 500,
+      body: "threw an error" + JSON.stringify(error),
     };
     return response;
   }

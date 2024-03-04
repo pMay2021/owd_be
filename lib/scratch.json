@@ -38,3 +38,45 @@
     "body": "{\n  \"email\": \"m.venugopal+owd3@gmail.com\",\n  \"acceptedTerms\" : \"true\"\n}",
     "isBase64Encoded": false
 }
+
+
+{
+    "version": "2.0",
+    "routeKey": "PUT /customers",
+    "rawPath": "/customers",
+    "rawQueryString": "",
+    "headers": {
+        "accept": "*/*",
+        "accept-encoding": "gzip, deflate, br",
+        "cache-control": "no-cache",
+        "content-length": "253",
+        "content-type": "application/json",
+        "host": "8mjx9kwd7g.execute-api.us-east-1.amazonaws.com",
+        "postman-token": "606cf8b0-ad5e-440e-bf19-cb697d9eccbc",
+        "user-agent": "PostmanRuntime/7.36.3",
+        "x-amzn-trace-id": "Root=1-65e506ed-6b77dc9c29853dbc57cfd119",
+        "x-forwarded-for": "54.86.50.139",
+        "x-forwarded-port": "443",
+        "x-forwarded-proto": "https"
+    },
+    "requestContext": {
+        "accountId": "627389239307",
+        "apiId": "8mjx9kwd7g",
+        "domainName": "8mjx9kwd7g.execute-api.us-east-1.amazonaws.com",
+        "domainPrefix": "8mjx9kwd7g",
+        "http": {
+            "method": "PUT",
+            "path": "/customers",
+            "protocol": "HTTP/1.1",
+            "sourceIp": "54.86.50.139",
+            "userAgent": "PostmanRuntime/7.36.3"
+        },
+        "requestId": "UE4FHi0joAMEVNA=",
+        "routeKey": "PUT /customers",
+        "stage": "$default",
+        "time": "03/Mar/2024:23:25:33 +0000",
+        "timeEpoch": 1709508333278
+    },
+    "body": "{\n  \"name\": \"venujaya\",\n  \"email\": \"m.venugopal@gmail.com\",\n  \"cid\": \"HbWUAV7JaA6cio3A\",\n  \"cellNumber\": \"+17325995932\",\n  \"country\": \"us\",\n  \"state\": \"va\",\n  \"sendEmail\": \"true\",\n  \"sendSMS\": \"false\",\n  \"sendWhatsapp\": \"false\",\n  \"sendPush\": \"false\"\n}\n",
+    "isBase64Encoded": false
+}
