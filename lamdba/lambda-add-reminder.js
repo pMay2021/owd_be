@@ -6,17 +6,17 @@ export const handler = async (event, context) => {
   const { id, loc, expiresOn } = event;
   owd.log(event, `${context.functionName}: received event`);
 
-  const client = new DynamoDBClient({ region: "us-east-1" });
   const cid = "cZ9vKlkdJuKNeMdr4"; // Fixed for testing
 
   try {
+    
     // Validate input parameters
     if (!id || !loc || !expiresOn) {
       throw new Error("Missing required parameters.");
     }
 
     const customerDb = await owd.getItem("db-customer", cid);
-
+    
     if (!customerDb) {
       throw new Error("Customer not found.");
     }
@@ -30,11 +30,11 @@ export const handler = async (event, context) => {
 
     const offsetArray = docDb.reminderOffsetDays.L.map((x) => x.N);
     const newDates = owd.getOffsetDates(expiresOn, offsetArray);
-
+    
     for (const date of newDates) {
-      const hour = new Date().getHours().toString().padStart(2, "0");
+      const hour = new Date().getHours().toString().padStart(2, '0');
       const noticeItem = {
-        pk: { S: date.date + "#" + hour },
+        pk: { S: date.date + "#" + hour},
         sk: { S: cid + "#" + owd.getShortId(6) },
         cid: { S: cid },
         isAlreadySent: { BOOL: false },
