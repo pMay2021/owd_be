@@ -1,8 +1,8 @@
 {
   "Template": {
     "TemplateName": "Notice",
-    "SubjectPart": "[OnWhichDate]A date's due.",
-    "TextPart": "Hi {{name}},\nHeads-up!\nYour item: \n{{documentName}} is due in {{dueInDays}}, on {{dueDate}}. \nWe thought you should know!\nNotes: {{notes}}\n\n{{referenceLinks}}\nWe hope that helped you!\nJust head over to https://onwhichdate.com to make any changes\nThanks,\nfrom your friendly helpers @ owd.\n\n",
-    "HtmlPart": "<p>Hi {{name}},</p>\n<p>Heads-up!</p>\n<p>Your item: </p>\n<p>{{documentName}} is due in {{dueInDays}}, on {{dueDate}}. </p>\n<p>We thought you should know!</p>\n<p>Notes: {{notes}}</p>\n<hr>\n<p>{{referenceLinks}}</p>\n<p>We hope that helped you!</p>\n<p>Just head over to <a href=\"https://onwhichdate.com\">https://onwhichdate.com</a> to make any changes</p>\n<p>Thanks,</p>\n<p>from your friendly helpers @ owd.</p>\n<hr>\n"
+    "SubjectPart": "[OnWhichDate] A date's due.",
+    "TextPart": "Hi {{name}},\nHeads-up!\nYour item:\n{{documentName}} is due in {{dueInDays}}, on {{dueDate}}.\nNotes: {{notes}}\n\n{{referenceLinks}}\nWe hope that helped you!\nGo to https://onwhichdate.com to make any changes\nThanks,\nfrom your friendly reminders @ owd.\n\n",
+    "HtmlPart": "<p>Hi {{name}},</p>\n<p>Heads-up!</p>\n<p>Your item:</p>\n<p><strong>{{documentName}}</strong> is due in <em>{{dueInDays}}</em>, on <strong>{{dueDate}}.</strong></p>\n<p>Notes: {{notes}}</p>\n<hr>\n<p>{{referenceLinks}}</p>\n<p>We hope that helped you!</p>\n<p>Go to <a href=\"https://onwhichdate.com\">https://onwhichdate.com</a> to make any changes</p>\n<p>Thanks,</p>\n<p>from your friendly reminders @ owd.</p>\n<hr>\n"
   }
 }
