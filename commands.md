@@ -32,6 +32,8 @@ format: https://api-id.execute-api.region.amazonaws.com/stage
 
 ## deploying self-made layers
 
+**update**: go to the `lib` layer and run `./owdlib.sh -d "description for layer"` which will update the owdlib layer. replicate for others.
+
 1. put it in a folder, e.g., `owd-lib-layer`
 3. Structure the folders exactly as below, with the zip containing `nodejs/` and below
 4. Zip it as `zip -r owdlib.zip . `
