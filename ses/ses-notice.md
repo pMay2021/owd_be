@@ -1,16 +1,20 @@
-# {{documentName}}: A date's due!
+Hi {{name}},
 
 Heads-up!
 
-Your item: {{documentName}} is due in {{dueInDays}}, on {{dueDate}}. We thought you should know!
+Your item: 
 
-Additional notes you entered: {{additionalNotes}}
+{{documentName}} is due in {{dueInDays}}, on {{dueDate}}. 
+
+We thought you should know!
+
+Notes: {{notes}}
+
+----
 
 {{referenceLinks}}
 
 We hope that helped you!
-
-Note:
 
 Just head over to [https://onwhichdate.com](https://onwhichdate.com) to make any changes
 
@@ -19,5 +23,3 @@ Thanks,
 from your friendly helpers @ owd.
 
 -----
-
-{{sponsoredLinks}}

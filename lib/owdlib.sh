@@ -31,7 +31,7 @@ LAYER_DIR="/Users/mdev/code/tmp/owd-layer/"
 
 # copy *.msj to /Users/mdev/code/tmp/owd-layer/nodejs/node20
 rm -rf /Users/mdev/code/tmp/owd-layer/owdlib.zip
-cp ./owd*.mjs /Users/mdev/code/tmp/owd-layer/nodejs/node20/
+cp ./*.mjs /Users/mdev/code/tmp/owd-layer/nodejs/node20/
 cd /Users/mdev/code/tmp/owd-layer/
 echo "now in " $(pwd)
 zip -r ${LAYER_DIR}owdlib.zip .

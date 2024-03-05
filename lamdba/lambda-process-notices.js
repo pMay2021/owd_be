@@ -8,13 +8,12 @@
 
 import * as owd from "/opt/nodejs/node20/owd.mjs";
 import * as db from "/opt/nodejs/node20/owddb.mjs";
-import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
+import * as ch from "/opt/nodejs/node20/channels.mjs";
 
 const goModify = true; //set to true to enable actual db operations
 
 const sendNotice = async (notice) => {
   owd.log(notice, "\nSending notice for:", true);
-  // send the notice
 
   // get the document details
   const docDetails = notice.documentId.S.split("|");
@@ -25,15 +24,20 @@ const sendNotice = async (notice) => {
   const customerDb = await db.getItem("db-customer", notice.cid.S);
   owd.log(customerDb, "\nRetrieved customer details:", false);
 
-  // get the notice template
-
-}
+  // construct the email and text message
+  await ch.sendEmail("notice@onwhichdate.com", customerDb.email.S, "Notice", {
+    name: customerDb.nickName.S,
+    documentName: docDb.title.S,
+    dueInDays: notice.daysRemaining.N,
+    dueDate: notice.originalExpiryOn.S,
+    referenceLinks: docDb.referenceLinks.S,
+    notes: notice.notes.S,
+  });
+};
 
 export const handler = async (event, context) => {
-  const ses = new SESv2Client({ region: "us-east-1" });
   owd.log(owd.getVersion(), "\nLib version (note: goModify = " + goModify + ")");
   const body = JSON.parse(event.body);
-  const { cid, docId, loc, expiresOn } = body;
   owd.log(event, `\n${context.functionName}: received event`);
 
   try {
@@ -64,39 +68,5 @@ export const handler = async (event, context) => {
         "Content-Type": "application/json",
       },
     };
-  }
-
-  async function createAndInsertNotices(offsetArray, docDb) {
-    const newDates = owd.getOffsetDates(expiresOn, offsetArray);
-
-    for (const date of newDates) {
-      const hour = new Date().getHours().toString().padStart(2, "0");
-      const noticeItem = {
-        pk: { S: date.date + "#" + hour },
-        sk: { S: cid + "#" + owd.getShortId(6) }, //the shortId ensures uniqueness
-        cid: { S: cid },
-        isAlreadySent: { BOOL: false },
-        addedOn: { S: new Date().toISOString() },
-        isParent: { BOOL: true },
-        originalExpiryOn: { S: newDates[0].date },
-        documentId: { S: docDb.pk.S + "|" + docDb.sk.S },
-        sendSMS: { BOOL: body.sendSMS },
-        sendEmail: { BOOL: body.sendEmail },
-        sendPush: { BOOL: body.sendPush },
-        sendWhatsapp: { BOOL: body.sendWhatsapp },
-        additionalSends: { S: JSON.stringify(body.additionalSends) },
-        daysRemaining: { N: date.offsetNumber },
-        notes: { S: body.notes },
-      };
-
-      owd.log(noticeItem, "\nConstructed notice entry for:", true);
-      if (goModify) {
-        const resp = await db.putItem("db-notice", noticeItem);
-        owd.log(resp, "\nAdded notice to db:", false);
-      } else {
-        owd.log("Skipping actual db operation", "\n", true);
-      }
-    }
-    return newDates;
   }
 };
