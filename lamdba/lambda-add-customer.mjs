@@ -36,8 +36,6 @@ export const handler = async (event, context) => {
   const method = event.requestContext?.http.method;
   let resp = { msg: "started..." };
 
-  // let's establish some defaults.
-
   owd.log(event, "Incoming event:", false);
   owd.log(owd.getVersion(), "\nLib version (note: goModify = " + goModify + ")");
   resp.event = event.body;
@@ -46,7 +44,6 @@ export const handler = async (event, context) => {
   //let's normalize the email
   // we need the email for verify as we don't have a CID yet, we create it here.
   const email = body.email.toLowerCase().trim();
-  owd.log(method + " " + email, "email and method");
 
   // basic checks and ensure from legit email address
   if (!owd.isValidEmail(email) || isDisposable(email)) {
@@ -109,8 +106,6 @@ export const handler = async (event, context) => {
     // let's structure the dynamoDB item
     if (method === "POST") {
       //create a new entry with defaults
-      owd.log(itemDefaults, "POST: Constructed db-customer item:", false);
-
       // now it's time to insert the item
       if (goModify) {
         const im = await db.putItem("db-customer", itemDefaults);
@@ -156,8 +151,6 @@ export const handler = async (event, context) => {
         sendMarketingEmails: { BOOL: body.sendMarketingEmails ?? itemDefaults.sendMarketingEmails.BOOL }, //occasional marketing emails
         sendTopicUpdates: { BOOL: body.sendTopicUpdates ?? itemDefaults.sendTopicUpdates.BOOL },
       };
-
-      owd.log(item, "update-item for cid:" + body.cid);
 
       // now it's time to update the item
       if (goModify) {
