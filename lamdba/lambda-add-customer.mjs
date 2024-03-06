@@ -1,19 +1,18 @@
 /*
  * this code does both POST (clicked on magic link so we add new subscriber)
  * and PUT (updating a record)
- *
+ 
  * change log
  * ----------
+ * v1.0.1 updated post/put structures and schema, revised code for latest owd layer
  * v1.0.0 basic version works.
  */
 
-
 import * as owd from "/opt/nodejs/node20/owd.mjs";
 import * as db from "/opt/nodejs/node20/owddb.mjs";
-import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
-
-const ses = new SESv2Client({ region: "us-east-1" });
+import * as ch from "/opt/nodejs/node20/channels.mjs";
 const goModify = true;
+const devEmail = "m.venugopal@gmail.com";
 
 const getCountryFromLanguage = (lang) => {
   //TODO later
@@ -28,34 +27,9 @@ const getCountryFromLanguage = (lang) => {
  * @throws {Error} - Throws an error if the customer is already registered.
  */
 const isCustomerRegistered = async (email) => {
-  const items = await db.getItemByGSI("db-customer", "email-index", "email = :email", { ":email": { S: email } });
+  const items = await db.queryItems("db-customer", "email-index", "email = :email", { ":email": { S: email } });
   const status = items && items.length > 0;
   return status;
-};
-
-const sendWelcomeEmail = async (email) => {
-  const devEmail = "m.venugopal@gmail.com";
-
-  const name = "subscriber"; // Replace with actual name if available
-  const data = { email, name };
-
-  const input = {
-    FromEmailAddress: "notice@onwhichdate.com",
-    Destination: {
-      ToAddresses: [devEmail], // Use actual email address in production
-    },
-    FeedbackForwardingEmailAddress: "bounce@onwhichdate.com",
-    Content: {
-      Template: {
-        TemplateName: "Welcome",
-        TemplateData: JSON.stringify(data),
-      },
-    },
-  };
-
-  // Send email using SES
-  const sesResponse = await ses.send(new SendEmailCommand(input));
-  owd.log(sesResponse, "sent email");
 };
 
 export const handler = async (event, context) => {
@@ -64,28 +38,33 @@ export const handler = async (event, context) => {
 
   // let's establish some defaults.
 
-  owd.log(event, "Incoming event:", true);
+  owd.log(event, "Incoming event:", false);
   owd.log(owd.getVersion(), "\nLib version (note: goModify = " + goModify + ")");
   resp.event = event.body;
   const body = JSON.parse(event.body);
 
-  try {
-    //let's normalize the email
-    const email = body.email.toLowerCase().trim();
-    
-    // basic checks and ensure from legit email address
-    if (!owd.isValidEmail(email) || isDisposable(email)) {
-      throw new Error(email + ": please use a valid email and non-disposable domain.");
-    }
+  //let's normalize the email
+  // we need the email for verify as we don't have a CID yet, we create it here.
+  const email = body.email.toLowerCase().trim();
+  owd.log(method + " " + email, "email and method");
 
-    // what if the customer already exists in our database?
+  // basic checks and ensure from legit email address
+  if (!owd.isValidEmail(email) || isDisposable(email)) {
+    throw new Error(email + ": please use a valid email and non-disposable domain.");
+  }
+
+  try {
+    // the POST means customer clicked a magic link to verify email
     if (method === "POST") {
+      owd.log("calling isRegistered");
+      // what if the customer already exists in our database?
       const isRegistered = await isCustomerRegistered(email);
+      owd.log(isRegistered, "is registered?");
 
       if (isRegistered) {
         return {
           statusCode: 200,
-          body: JSON.stringify(resp) + "already registered, login instead."
+          body: JSON.stringify(resp) + "already registered, login instead.",
         };
       }
     }
@@ -120,8 +99,12 @@ export const handler = async (event, context) => {
       sendSMS: { BOOL: false },
       sendWhatsapp: { BOOL: false },
       sendPush: { BOOL: false },
-      additionalEmails: { SS: [""] }, //for future implementation
+      emailCC: { SS: [""] }, //for future implementation
+      ccOnByDefault: { BOOL: false },
+      sendMarketingEmails: { BOOL: false }, //occasional marketing emails
+      sendTopicUpdates: { BOOL: true }, //occasional topic updates on major doc types
     };
+    owd.log(itemDefaults, "default Item");
 
     // let's structure the dynamoDB item
     if (method === "POST") {
@@ -134,23 +117,33 @@ export const handler = async (event, context) => {
         owd.log(im, "inserted item in customer table", true);
 
         // now send a welcome email
-        await sendWelcomeEmail(email);
+        const data = { email: email, name: "Subscriber" };
+        await ch.sendEmail("notice@onwhichdate.com", devEmail, "Welcome", data);
       }
       resp.msg = "inserted new verified record.";
     } // end POST
 
     if (method === "PUT") {
       // this is for updates
-console.log("inside PUT");
       // TODO conduct a full item verification or sanitization as needed
       // sanitize email, phoneNumber, nickName length etc.
       const nickName = body.nickName ? body.nickName.trim().substring(0, 10) : itemDefaults.nickName.S;
       const cellNumber = owd.normalizeCellNumber(body.cellNumber);
+      // let's do some basic verification
 
+      const customer = await db.getItem("db-customer", body.cid);
+      if (!customer || customer.email.S != email) {
+        return {
+          statusCode: 500,
+          body: "customer verification failed: " + email + (" err: " + body.cid + ") " + JSON.stringify(customer)),
+        };
+      }
+
+      //only the updatable attributes
       const item = {
         nickName: { S: nickName },
         cellNumber: { S: cellNumber },
-        countryCode: { S: body.country },
+        countryCode: { S: body.countryCode ?? itemDefaults.countryCode.S },
         stateCode: { S: body.stateCode ?? itemDefaults.stateCode.S },
         magicCode: { S: owd.getShortId() }, // generate a magic code to use as a link in magic links
         magicCodeExpiresAt: { S: new Date(today.getTime() + 15 * 60000) }, //expires in 15 minutes
@@ -158,16 +151,19 @@ console.log("inside PUT");
         sendSMS: { BOOL: body.sendSMS },
         sendWhatsapp: { BOOL: body.sendWhatsapp },
         sendPush: { BOOL: body.sendPush },
-        additionalEmails: { SS: body.sendAdditionalEmails ?? itemDefaults.additionalEmails.SS }, //for future implementation
+        emailCC: { SS: body.emailCC ?? itemDefaults.emailCC.SS }, //for future implementation
+        ccOnByDefault: { BOOL: body.ccOnByDefault ?? itemDefaults.ccOnByDefault.BOOL },
+        sendMarketingEmails: { BOOL: body.sendMarketingEmails ?? itemDefaults.sendMarketingEmails.BOOL }, //occasional marketing emails
+        sendTopicUpdates: { BOOL: body.sendTopicUpdates ?? itemDefaults.sendTopicUpdates.BOOL },
       };
 
-      owd.log(item, "\nupdate-item for cid:" + body.cid);
+      owd.log(item, "update-item for cid:" + body.cid);
 
-      // now it's time to insert the item
+      // now it's time to update the item
       if (goModify) {
         const im = await db.updateItem("db-customer", item, body.cid);
         resp.msg = "PUT: updated customer record";
-        owd.log(im, "updated db-customer:");
+        owd.log(im, "successfully updated db-customer:");
       }
     }
 

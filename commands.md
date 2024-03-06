@@ -50,3 +50,9 @@ format: https://api-id.execute-api.region.amazonaws.com/stage
 └── owdlib.zip
 
 ~~~
+
+
+### Common mistakes
+
+1. making dynamoDB record comparisons without type strings: e.g., `if (email === record.email) instead of if (email === record.email.S)`
+3. sending empty objects in insert or update

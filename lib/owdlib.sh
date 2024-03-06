@@ -1,3 +1,5 @@
+# takes a description and updates the owd layer on AWS
+
 #!/bin/bash
 # Accept a -d description argument
 while getopts "d:" opt; do

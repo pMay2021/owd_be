@@ -1,4 +1,4 @@
-import * as owd from "./owd.mjs";
+import * as owd from "../lib/owd.mjs";
 // sample for PUT
 const body_PUT = {
   nickName: "venappan",
