@@ -3,14 +3,13 @@
  *
  * change log
  * ----------
- * v1.0.3 sends an email including adding markdown content for reference links
+ * v1.0.4 updated schema and layers, sending email with s3 addendum works (but code is hardcoded to a date for testing)
+ * v1.0.3 basic version works on email
  */
 
 import * as owd from "/opt/nodejs/node20/owd.mjs";
 import * as db from "/opt/nodejs/node20/owddb.mjs";
 import * as ch from "/opt/nodejs/node20/channels.mjs";
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
-const s3 = new S3Client({});
 
 const goModify = true; //set to true to enable actual db operations
 
@@ -30,23 +29,22 @@ const sendNotice = async (notice) => {
   ch.setModify(true);
 
   const inDays = owd.getFriendlyDateDifference(new Date(), notice.originalExpiryOn.S);
-  //const fileKey = "travel#us#passport.md";
-  const fileKey = "db/" + docDb.pk.S + "#" + docDb.sk.S + ".md";
-  owd.log(fileKey, "The S3 file key");
 
-  const refContent = await db.getS3Text("onwhichdate", fileKey);
-  owd.log(refContent, "s3 text");
+  //const fileKey = e.g., "travel#us#passport.md";
+  const fileKey = "db/" + docDb.pk.S + "#" + docDb.sk.S + ".md";
+  owd.log(fileKey, "The S3 file key: and refDoc == " + docDb.refDoc.BOOL, false);
+
+  const refContent = docDb.refDoc.BOOL === true ? await db.getS3Text("onwhichdate", fileKey) : "";
 
   const d = {
     name: customerDb.nickName.S,
     notes: notice.notes.S,
     documentName: docDb.documentName.S,
-    dueInDays: inDays.sentence,
+    dueInDays: inDays.dueInSentence,
     dueDate: owd.getFriendlyDate(notice.originalExpiryOn.S),
     referenceLinks: owd.getHtmlFromMarkdown(refContent),
   };
 
-  owd.log(d, "\n send obj");
   if (goModify) {
     const r = await ch.sendEmail("notice@onwhichdate.com", "m.venugopal@gmail.com", "Notice", d);
   }
@@ -62,7 +60,7 @@ export const handler = async (event, context) => {
     const date = new Date();
     const hour = date.getHours().toString().padStart(2, "0");
     let pk = date.toISOString().split("T")[0] + "#" + hour;
-    pk = "2029-07-18#04"; //for testing purposes
+    pk = "2028-10-08#23"; //for testing
 
     // get all records from the db-notice table that are due to be sent
     const notices = await db.queryItems("db-notice", "pk", "pk = :pk", { ":pk": { S: pk } });
