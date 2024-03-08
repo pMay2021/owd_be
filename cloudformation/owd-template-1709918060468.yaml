@@ -1,0 +1,955 @@
+---
+Metadata:
+  TemplateId: "arn:aws:cloudformation:us-east-1:627389239307:generatedTemplate/dbe04a34-7482-4c84-9e1a-4c36f3d20a5c"
+Parameters:
+  LambdaFunction00lambdaaddreminder00doVsMCodeS3BucketOneOfRRnxk:
+    NoEcho: "true"
+    Type: "String"
+    Description: "An Amazon S3 bucket in the same AWS-Region as your function. The\
+      \ bucket can be in a different AWS-account.\nThis property can be replaced with\
+      \ other exclusive properties"
+  LambdaFunction00lambdaprocessnotices00kOCeHCodeS3BucketOneOfkvXSy:
+    NoEcho: "true"
+    Type: "String"
+    Description: "An Amazon S3 bucket in the same AWS-Region as your function. The\
+      \ bucket can be in a different AWS-account.\nThis property can be replaced with\
+      \ other exclusive properties"
+  LambdaFunction00lambdainitialregistration00DsqzUCodeS3BucketOneOfEwHna:
+    NoEcho: "true"
+    Type: "String"
+    Description: "An Amazon S3 bucket in the same AWS-Region as your function. The\
+      \ bucket can be in a different AWS-account.\nThis property can be replaced with\
+      \ other exclusive properties"
+  LambdaFunction00lambdaaddcustomer00BPXg2CodeS3KeyOneOf66Rv6:
+    NoEcho: "true"
+    Type: "String"
+    Description: "The Amazon S3 key of the deployment package.\nThis property can\
+      \ be replaced with other exclusive properties"
+  LambdaFunction00lambdainitialregistration00DsqzUCodeS3KeyOneOfsELd3:
+    NoEcho: "true"
+    Type: "String"
+    Description: "The Amazon S3 key of the deployment package.\nThis property can\
+      \ be replaced with other exclusive properties"
+  LambdaFunction00lambdaaddcustomer00BPXg2CodeS3BucketOneOfqE2gb:
+    NoEcho: "true"
+    Type: "String"
+    Description: "An Amazon S3 bucket in the same AWS-Region as your function. The\
+      \ bucket can be in a different AWS-account.\nThis property can be replaced with\
+      \ other exclusive properties"
+  LambdaFunction00lambdatestdummy00KxmMKCodeS3BucketOneOfJYEOp:
+    NoEcho: "true"
+    Type: "String"
+    Description: "An Amazon S3 bucket in the same AWS-Region as your function. The\
+      \ bucket can be in a different AWS-account.\nThis property can be replaced with\
+      \ other exclusive properties"
+  LambdaFunction00lambdatestdummy00KxmMKCodeS3KeyOneOfhfERf:
+    NoEcho: "true"
+    Type: "String"
+    Description: "The Amazon S3 key of the deployment package.\nThis property can\
+      \ be replaced with other exclusive properties"
+  LambdaFunction00lambdaaddreminder00doVsMCodeS3KeyOneOfxsjGh:
+    NoEcho: "true"
+    Type: "String"
+    Description: "The Amazon S3 key of the deployment package.\nThis property can\
+      \ be replaced with other exclusive properties"
+  LambdaFunction00lambdawelcomeemail00BdW3qCodeS3BucketOneOfM75ny:
+    NoEcho: "true"
+    Type: "String"
+    Description: "An Amazon S3 bucket in the same AWS-Region as your function. The\
+      \ bucket can be in a different AWS-account.\nThis property can be replaced with\
+      \ other exclusive properties"
+  LambdaFunction00lambdaprocessnotices00kOCeHCodeS3KeyOneOfnAYmG:
+    NoEcho: "true"
+    Type: "String"
+    Description: "The Amazon S3 key of the deployment package.\nThis property can\
+      \ be replaced with other exclusive properties"
+  LambdaFunction00lambdawelcomeemail00BdW3qCodeS3KeyOneOfKy0y4:
+    NoEcho: "true"
+    Type: "String"
+    Description: "The Amazon S3 key of the deployment package.\nThis property can\
+      \ be replaced with other exclusive properties"
+Resources:
+  LambdaVersion00functionlambdaaddreminder200gm22w:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Lambda::Version"
+    DeletionPolicy: "Retain"
+    Properties:
+      FunctionName:
+        Ref: "LambdaFunction00lambdaaddreminder00doVsM"
+      Description: "creates new item in reminders db, but only for the first in the\
+        \ new dates. looping next."
+      RuntimePolicy:
+        UpdateRuntimeOn: "Auto"
+      CodeSha256: "5aNupCLpq2nIFX+bLueYz97JoYXQg4QZQbwpxO19bek="
+  LambdaFunction00lambdawelcomeemail00BdW3q:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Lambda::Function"
+    DeletionPolicy: "Retain"
+    Properties:
+      MemorySize: 128
+      Description: ""
+      TracingConfig:
+        Mode: "PassThrough"
+      Timeout: 90
+      RuntimeManagementConfig:
+        UpdateRuntimeOn: "Auto"
+      Handler: "index.handler"
+      Code:
+        S3Bucket:
+          Ref: "LambdaFunction00lambdawelcomeemail00BdW3qCodeS3BucketOneOfM75ny"
+        S3Key:
+          Ref: "LambdaFunction00lambdawelcomeemail00BdW3qCodeS3KeyOneOfKy0y4"
+      Role:
+        Fn::GetAtt:
+        - "IAMRole00lambdasespermissions00lG4Io"
+        - "Arn"
+      FileSystemConfigs: []
+      FunctionName: "lambda-welcome-email"
+      Runtime: "nodejs20.x"
+      PackageType: "Zip"
+      LoggingConfig:
+        LogFormat: "Text"
+        LogGroup: "/aws/lambda/lambda-welcome-email"
+      EphemeralStorage:
+        Size: 512
+      Tags:
+      - Value: "welcome-email"
+        Key: "cost-center"
+      Architectures:
+      - "arm64"
+  ApiGatewayV2Deployment008sdz2l00Xc8QO:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::ApiGatewayV2::Deployment"
+    DeletionPolicy: "Retain"
+    Properties:
+      ApiId:
+        Ref: "ApiGatewayV2Api008mjx9kwd7g00hOYzo"
+      Description: "Automatic deployment triggered by changes to the Api configuration"
+  DynamoDBTable00dbdocument00oxfv1:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::DynamoDB::Table"
+    DeletionPolicy: "Retain"
+    Properties:
+      SSESpecification:
+        SSEEnabled: false
+      TableName: "db-document"
+      AttributeDefinitions:
+      - AttributeType: "S"
+        AttributeName: "pk"
+      - AttributeType: "S"
+        AttributeName: "sk"
+      ContributorInsightsSpecification:
+        Enabled: false
+      BillingMode: "PAY_PER_REQUEST"
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: false
+      KeySchema:
+      - KeyType: "HASH"
+        AttributeName: "pk"
+      - KeyType: "RANGE"
+        AttributeName: "sk"
+      DeletionProtectionEnabled: false
+      TableClass: "STANDARD"
+      Tags:
+      - Value: "db-customer"
+        Key: "cost-center"
+      TimeToLiveSpecification:
+        Enabled: false
+  IAMUser00VJ00P95mo:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::IAM::User"
+    DeletionPolicy: "Retain"
+    Properties:
+      Path: "/"
+      UserName: "VJ"
+      LoginProfile:
+        PasswordResetRequired: false
+      Groups:
+      - Ref: "IAMGroup00Admin008891W"
+  DynamoDBTable00dbdisposableemail00yNkCb:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::DynamoDB::Table"
+    DeletionPolicy: "Retain"
+    Properties:
+      SSESpecification:
+        SSEEnabled: false
+      TableName: "db-disposable-email"
+      AttributeDefinitions:
+      - AttributeType: "S"
+        AttributeName: "pk"
+      ContributorInsightsSpecification:
+        Enabled: false
+      BillingMode: "PAY_PER_REQUEST"
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: false
+      KeySchema:
+      - KeyType: "HASH"
+        AttributeName: "pk"
+      DeletionProtectionEnabled: false
+      TableClass: "STANDARD"
+      Tags:
+      - Value: "db-disposable-email"
+        Key: "cost-center"
+      TimeToLiveSpecification:
+        Enabled: false
+  ApiGatewayV2Deployment00vgw2ad00nXn9g:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::ApiGatewayV2::Deployment"
+    DeletionPolicy: "Retain"
+    Properties:
+      ApiId:
+        Ref: "ApiGatewayV2Api00l6eifms8x700tuVYZ"
+      Description: "Automatic deployment triggered by changes to the Api configuration"
+  LambdaVersion00functionlambdawelcomeemail100neBkj:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Lambda::Version"
+    DeletionPolicy: "Retain"
+    Properties:
+      FunctionName:
+        Ref: "LambdaFunction00lambdawelcomeemail00BdW3q"
+      Description: "POC successfully sends email via SES using the welcome template."
+      RuntimePolicy:
+        UpdateRuntimeOn: "Auto"
+      CodeSha256: "xXa1NVkB22enh0cUhWfA76SjGdP8Ob7em8yrGoXNrX0="
+  IAMUser00JP00QMIpo:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::IAM::User"
+    DeletionPolicy: "Retain"
+    Properties:
+      Path: "/"
+      UserName: "JP"
+      LoginProfile:
+        PasswordResetRequired: false
+      Groups:
+      - Ref: "IAMGroup00Admin008891W"
+      Tags:
+      - Value: "local_CLI_key"
+        Key: "AKIAZEE2QCAFS4DDBQE6"
+  LambdaVersion00functionlambdaaddreminder100fzIMk:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Lambda::Version"
+    DeletionPolicy: "Retain"
+    Properties:
+      FunctionName:
+        Ref: "LambdaFunction00lambdaaddreminder00doVsM"
+      Description: "mock works: can send a POST with the object and it works out notice\
+        \ dates and day of week after pulling doc type info from documentDB."
+      RuntimePolicy:
+        UpdateRuntimeOn: "Auto"
+      CodeSha256: "N1hku27JJ44YND0SDdfgsKcc4dSw6NX9/4I2loUFsTk="
+  IAMManagedPolicy00policyserviceroleAWSLambdaBasicExecutionRole341e45f6dda34016a602b41db3772d0000t57XJ:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::IAM::ManagedPolicy"
+    DeletionPolicy: "Retain"
+    Properties:
+      ManagedPolicyName: "AWSLambdaBasicExecutionRole-341e45f6-dda3-4016-a602-b41db3772d00"
+      Path: "/service-role/"
+      Description: ""
+      Groups: []
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Resource: "arn:aws:logs:us-east-1:627389239307:*"
+          Action: "logs:CreateLogGroup"
+          Effect: "Allow"
+        - Resource:
+          - "*"
+          Action:
+          - "logs:CreateLogStream"
+          - "logs:PutLogEvents"
+          Effect: "Allow"
+      Roles:
+      - Ref: "IAMRole00lambdasespermissions00lG4Io"
+      Users: []
+  LambdaPermission00functionlambdaaddreminder00VB9xC:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Lambda::Permission"
+    DeletionPolicy: "Retain"
+    Properties:
+      FunctionName:
+        Fn::GetAtt:
+        - "LambdaFunction00lambdaaddreminder00doVsM"
+        - "Arn"
+      Action: "lambda:InvokeFunction"
+      SourceArn: "arn:aws:execute-api:us-east-1:627389239307:g65d20q980/*/*/reminders"
+      Principal: "apigateway.amazonaws.com"
+  ApiGatewayV2Api00g65d20q98000Cv2a2:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::ApiGatewayV2::Api"
+    DeletionPolicy: "Retain"
+    Properties:
+      RouteSelectionExpression: "$request.method $request.path"
+      DisableExecuteApiEndpoint: false
+      ProtocolType: "HTTP"
+      Tags: {}
+      Name: "manage reminders"
+  ApiGatewayV2Deployment001k7rji00cC1Dd:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::ApiGatewayV2::Deployment"
+    DeletionPolicy: "Retain"
+    Properties:
+      ApiId:
+        Ref: "ApiGatewayV2Api008mjx9kwd7g00hOYzo"
+      Description: "Automatic deployment triggered by changes to the Api configuration"
+  DynamoDBTable00dbcustomer00ryZvm:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::DynamoDB::Table"
+    DeletionPolicy: "Retain"
+    Properties:
+      SSESpecification:
+        SSEEnabled: false
+      TableName: "db-customer"
+      AttributeDefinitions:
+      - AttributeType: "S"
+        AttributeName: "email"
+      - AttributeType: "S"
+        AttributeName: "pk"
+      ContributorInsightsSpecification:
+        Enabled: false
+      BillingMode: "PAY_PER_REQUEST"
+      GlobalSecondaryIndexes:
+      - IndexName: "email-index"
+        Projection:
+          ProjectionType: "ALL"
+          NonKeyAttributes: []
+        KeySchema:
+        - KeyType: "HASH"
+          AttributeName: "email"
+        ContributorInsightsSpecification:
+          Enabled: false
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: false
+      KeySchema:
+      - KeyType: "HASH"
+        AttributeName: "pk"
+      DeletionProtectionEnabled: false
+      TableClass: "STANDARD"
+      Tags:
+      - Value: "db-customer"
+        Key: "cost-center"
+      TimeToLiveSpecification:
+        Enabled: false
+  ApiGatewayV2Deployment00h4lfo400a4aBJ:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::ApiGatewayV2::Deployment"
+    DeletionPolicy: "Retain"
+    Properties:
+      ApiId:
+        Ref: "ApiGatewayV2Api008mjx9kwd7g00hOYzo"
+      Description: "Automatic deployment triggered by changes to the Api configuration"
+  IAMRole00lambdasespermissions00lG4Io:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::IAM::Role"
+    DeletionPolicy: "Retain"
+    Properties:
+      Path: "/service-role/"
+      ManagedPolicyArns:
+      - "arn:aws:iam::aws:policy/AmazonSESFullAccess"
+      - "arn:aws:iam::627389239307:policy/service-role/AWSLambdaBasicExecutionRole-341e45f6-dda3-4016-a602-b41db3772d00"
+      - "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+      - "arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
+      - "arn:aws:iam::aws:policy/service-role/AmazonS3ObjectLambdaExecutionRolePolicy"
+      - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+      MaxSessionDuration: 3600
+      RoleName: "lambda-ses-permissions"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Action: "sts:AssumeRole"
+          Effect: "Allow"
+          Principal:
+            Service: "lambda.amazonaws.com"
+  LambdaFunction00lambdatestdummy00KxmMK:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Lambda::Function"
+    DeletionPolicy: "Retain"
+    Properties:
+      MemorySize: 128
+      Description: ""
+      TracingConfig:
+        Mode: "PassThrough"
+      Timeout: 3
+      RuntimeManagementConfig:
+        UpdateRuntimeOn: "Auto"
+      Handler: "index.handler"
+      Code:
+        S3Bucket:
+          Ref: "LambdaFunction00lambdatestdummy00KxmMKCodeS3BucketOneOfJYEOp"
+        S3Key:
+          Ref: "LambdaFunction00lambdatestdummy00KxmMKCodeS3KeyOneOfhfERf"
+      Role:
+        Fn::GetAtt:
+        - "IAMRole00lambdasespermissions00lG4Io"
+        - "Arn"
+      FileSystemConfigs: []
+      FunctionName: "lambda-test-dummy"
+      Runtime: "nodejs20.x"
+      PackageType: "Zip"
+      LoggingConfig:
+        LogFormat: "Text"
+        LogGroup: "/aws/lambda/lambda-test-dummy"
+      EphemeralStorage:
+        Size: 512
+      Layers:
+      - "arn:aws:lambda:us-east-1:627389239307:layer:owdlib:26"
+      Architectures:
+      - "arm64"
+  LambdaEventSourceMapping0061e6886213b94d7194ba8a06a4081a9300elujQ:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Lambda::EventSourceMapping"
+    DeletionPolicy: "Retain"
+    Properties:
+      StartingPosition: "LATEST"
+      BatchSize: 10
+      FunctionName:
+        Fn::GetAtt:
+        - "LambdaFunction00lambdawelcomeemail00BdW3q"
+        - "Arn"
+      TumblingWindowInSeconds: 0
+      MaximumRetryAttempts: -1
+      BisectBatchOnFunctionError: false
+      ParallelizationFactor: 1
+      MaximumRecordAgeInSeconds: -1
+      Enabled: false
+      EventSourceArn: "arn:aws:dynamodb:us-east-1:627389239307:table/db-customer/stream/2024-02-26T21:11:47.210"
+      MaximumBatchingWindowInSeconds: 0
+  ApiGatewayV2Deployment00fqz6bk00Vs8vl:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::ApiGatewayV2::Deployment"
+    DeletionPolicy: "Retain"
+    Properties:
+      ApiId:
+        Ref: "ApiGatewayV2Api00g65d20q98000Cv2a2"
+      Description: "Automatic deployment triggered by changes to the Api configuration"
+  ApiGatewayV2Deployment0062fa4p00GAwVM:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::ApiGatewayV2::Deployment"
+    DeletionPolicy: "Retain"
+    Properties:
+      ApiId:
+        Ref: "ApiGatewayV2Api008mjx9kwd7g00hOYzo"
+      Description: "Automatic deployment triggered by changes to the Api configuration"
+  ApiGatewayV2Deployment001516no00v7o4N:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::ApiGatewayV2::Deployment"
+    DeletionPolicy: "Retain"
+    Properties:
+      ApiId:
+        Ref: "ApiGatewayV2Api008mjx9kwd7g00hOYzo"
+      Description: "Automatic deployment triggered by changes to the Api configuration"
+  ApiGatewayV2Deployment00c7rx5600pyH1o:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::ApiGatewayV2::Deployment"
+    DeletionPolicy: "Retain"
+    Properties:
+      ApiId:
+        Ref: "ApiGatewayV2Api008mjx9kwd7g00hOYzo"
+      Description: "Automatic deployment triggered by changes to the Api configuration"
+  IAMGroup00ebridgesessnscwatchq00oPBNC:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::IAM::Group"
+    DeletionPolicy: "Retain"
+    Properties:
+      GroupName: "ebridge-ses-sns-cwatch-q"
+      Path: "/"
+      ManagedPolicyArns:
+      - "arn:aws:iam::aws:policy/AmazonQFullAccess"
+      - "arn:aws:iam::aws:policy/AmazonSESFullAccess"
+      - "arn:aws:iam::aws:policy/CloudWatchFullAccessV2"
+      - "arn:aws:iam::aws:policy/AmazonSNSFullAccess"
+      - "arn:aws:iam::aws:policy/AmazonEventBridgeFullAccess"
+      - "arn:aws:iam::627389239307:policy/CostExplorerAccess"
+      Policies:
+      - PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Resource: "*"
+            Action: "mobiletargeting:*"
+            Effect: "Allow"
+            Sid: "VisualEditor0"
+        PolicyName: "PinpointAllAccess"
+  LambdaFunction00lambdainitialregistration00DsqzU:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Lambda::Function"
+    DeletionPolicy: "Retain"
+    Properties:
+      MemorySize: 128
+      Description: ""
+      TracingConfig:
+        Mode: "PassThrough"
+      Timeout: 3
+      RuntimeManagementConfig:
+        UpdateRuntimeOn: "Auto"
+      Handler: "index.handler"
+      Code:
+        S3Bucket:
+          Ref: "LambdaFunction00lambdainitialregistration00DsqzUCodeS3BucketOneOfEwHna"
+        S3Key:
+          Ref: "LambdaFunction00lambdainitialregistration00DsqzUCodeS3KeyOneOfsELd3"
+      Role:
+        Fn::GetAtt:
+        - "IAMRole00lambdasespermissions00lG4Io"
+        - "Arn"
+      FileSystemConfigs: []
+      FunctionName: "lambda-initial-registration"
+      Runtime: "nodejs20.x"
+      PackageType: "Zip"
+      LoggingConfig:
+        LogFormat: "Text"
+        LogGroup: "/aws/lambda/lambda-initial-registration"
+      EphemeralStorage:
+        Size: 512
+      Architectures:
+      - "arm64"
+  LambdaVersion00functionlambdaaddcustomer2007yPPk:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Lambda::Version"
+    DeletionPolicy: "Retain"
+    Properties:
+      FunctionName:
+        Ref: "LambdaFunction00lambdaaddcustomer00BPXg2"
+      Description: "this version now sends email as well on successful insert"
+      RuntimePolicy:
+        UpdateRuntimeOn: "Auto"
+      CodeSha256: "S3q/p4cm6mxecHKk9InMnsoaUMMJMzTjVVNFuQXifY0="
+  EventsEventBus00default00mzJw5:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Events::EventBus"
+    DeletionPolicy: "Retain"
+    Properties:
+      Tags: []
+      Name: "default"
+  DynamoDBTable00dbnotice00MDUzV:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::DynamoDB::Table"
+    DeletionPolicy: "Retain"
+    Properties:
+      SSESpecification:
+        SSEEnabled: false
+      TableName: "db-notice"
+      AttributeDefinitions:
+      - AttributeType: "S"
+        AttributeName: "cid"
+      - AttributeType: "S"
+        AttributeName: "pk"
+      - AttributeType: "S"
+        AttributeName: "sk"
+      ContributorInsightsSpecification:
+        Enabled: false
+      BillingMode: "PAY_PER_REQUEST"
+      GlobalSecondaryIndexes:
+      - IndexName: "cid-index"
+        Projection:
+          ProjectionType: "ALL"
+          NonKeyAttributes: []
+        KeySchema:
+        - KeyType: "HASH"
+          AttributeName: "cid"
+        ContributorInsightsSpecification:
+          Enabled: false
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: false
+      KeySchema:
+      - KeyType: "HASH"
+        AttributeName: "pk"
+      - KeyType: "RANGE"
+        AttributeName: "sk"
+      DeletionProtectionEnabled: false
+      TableClass: "STANDARD"
+      Tags:
+      - Value: "db-notice"
+        Key: "cost-center"
+      TimeToLiveSpecification:
+        Enabled: false
+  LambdaFunction00lambdaprocessnotices00kOCeH:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Lambda::Function"
+    DeletionPolicy: "Retain"
+    Properties:
+      MemorySize: 128
+      Description: ""
+      TracingConfig:
+        Mode: "PassThrough"
+      Timeout: 3
+      RuntimeManagementConfig:
+        UpdateRuntimeOn: "Auto"
+      Handler: "index.handler"
+      Code:
+        S3Bucket:
+          Ref: "LambdaFunction00lambdaprocessnotices00kOCeHCodeS3BucketOneOfkvXSy"
+        S3Key:
+          Ref: "LambdaFunction00lambdaprocessnotices00kOCeHCodeS3KeyOneOfnAYmG"
+      Role:
+        Fn::GetAtt:
+        - "IAMRole00lambdasespermissions00lG4Io"
+        - "Arn"
+      FileSystemConfigs: []
+      FunctionName: "lambda-process-notices"
+      Runtime: "nodejs20.x"
+      PackageType: "Zip"
+      LoggingConfig:
+        LogFormat: "Text"
+        LogGroup: "/aws/lambda/lambda-process-notices"
+      EphemeralStorage:
+        Size: 512
+      Layers:
+      - "arn:aws:lambda:us-east-1:627389239307:layer:owdlib:41"
+      Architectures:
+      - "arm64"
+  SESEmailIdentity00mvenugopalgmailcom00t5oPL:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::SES::EmailIdentity"
+    DeletionPolicy: "Retain"
+    Properties:
+      DkimAttributes:
+        SigningEnabled: false
+      FeedbackAttributes:
+        EmailForwardingEnabled: true
+      EmailIdentity: "m.venugopal@gmail.com"
+      DkimSigningAttributes:
+        NextSigningKeyLength: "RSA_1024_BIT"
+      MailFromAttributes:
+        BehaviorOnMxFailure: "USE_DEFAULT_VALUE"
+  LambdaPermission00functionlambdainitialregistration00BH8NS:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Lambda::Permission"
+    DeletionPolicy: "Retain"
+    Properties:
+      FunctionName:
+        Fn::GetAtt:
+        - "LambdaFunction00lambdainitialregistration00DsqzU"
+        - "Arn"
+      Action: "lambda:InvokeFunction"
+      SourceArn: "arn:aws:execute-api:us-east-1:627389239307:rzgoq22zk5/*/*/lambda-initial-registration"
+      Principal: "apigateway.amazonaws.com"
+  IAMGroup00Admin008891W:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::IAM::Group"
+    DeletionPolicy: "Retain"
+    Properties:
+      GroupName: "Admin"
+      Path: "/"
+      ManagedPolicyArns:
+      - "arn:aws:iam::aws:policy/AdministratorAccess"
+  IAMUser00OWDTest00fpVqe:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::IAM::User"
+    DeletionPolicy: "Retain"
+    Properties:
+      Path: "/"
+      ManagedPolicyArns:
+      - "arn:aws:iam::aws:policy/service-role/AWSCostAndUsageReportAutomationPolicy"
+      UserName: "OWD-Test"
+      LoginProfile:
+        PasswordResetRequired: false
+      Groups:
+      - Ref: "IAMGroup00apis3cogcfrontlambdaddb00DxiLa"
+      - Ref: "IAMGroup00ebridgesessnscwatchq00oPBNC"
+      - Ref: "IAMGroup00Admin008891W"
+      Tags:
+      - Value: "owd-cli"
+        Key: "AKIAZEE2QCAF2F7FEZ4F"
+      - Value: "owd-test-cli-key"
+        Key: "AKIAZEE2QCAFYKDFQOWG"
+  LambdaFunction00lambdaaddreminder00doVsM:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Lambda::Function"
+    DeletionPolicy: "Retain"
+    Properties:
+      MemorySize: 128
+      Description: ""
+      TracingConfig:
+        Mode: "PassThrough"
+      Timeout: 3
+      RuntimeManagementConfig:
+        UpdateRuntimeOn: "Auto"
+      Handler: "index.handler"
+      Code:
+        S3Bucket:
+          Ref: "LambdaFunction00lambdaaddreminder00doVsMCodeS3BucketOneOfRRnxk"
+        S3Key:
+          Ref: "LambdaFunction00lambdaaddreminder00doVsMCodeS3KeyOneOfxsjGh"
+      Role:
+        Fn::GetAtt:
+        - "IAMRole00lambdasespermissions00lG4Io"
+        - "Arn"
+      FileSystemConfigs: []
+      FunctionName: "lambda-add-reminder"
+      Runtime: "nodejs20.x"
+      PackageType: "Zip"
+      LoggingConfig:
+        LogFormat: "Text"
+        LogGroup: "/aws/lambda/lambda-add-reminder"
+      EphemeralStorage:
+        Size: 512
+      Layers:
+      - "arn:aws:lambda:us-east-1:627389239307:layer:owdlib:41"
+      Architectures:
+      - "arm64"
+  LambdaPermission00functionlambdaaddcustomer00b80WX:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Lambda::Permission"
+    DeletionPolicy: "Retain"
+    Properties:
+      FunctionName:
+        Fn::GetAtt:
+        - "LambdaFunction00lambdaaddcustomer00BPXg2"
+        - "Arn"
+      Action: "lambda:InvokeFunction"
+      SourceArn: "arn:aws:execute-api:us-east-1:627389239307:8mjx9kwd7g/*/*/customers"
+      Principal: "apigateway.amazonaws.com"
+  SESEmailIdentity00mvenugopalowdgmailcom00q4W5A:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::SES::EmailIdentity"
+    DeletionPolicy: "Retain"
+    Properties:
+      DkimAttributes:
+        SigningEnabled: false
+      FeedbackAttributes:
+        EmailForwardingEnabled: true
+      EmailIdentity: "m.venugopal+owd@gmail.com"
+      DkimSigningAttributes:
+        NextSigningKeyLength: "RSA_1024_BIT"
+      MailFromAttributes:
+        BehaviorOnMxFailure: "USE_DEFAULT_VALUE"
+  LambdaVersion00functionlambdaaddreminder300Jzdes:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Lambda::Version"
+    DeletionPolicy: "Retain"
+    Properties:
+      FunctionName:
+        Ref: "LambdaFunction00lambdaaddreminder00doVsM"
+      Description: "now uses owd. db utility functions and basic works"
+      RuntimePolicy:
+        UpdateRuntimeOn: "Auto"
+      CodeSha256: "StoEK1AJQAyXc4y10htKEv1Sl7dLUL3p0B0Vxqa2YMI="
+  ApiGatewayV2Api008mjx9kwd7g00hOYzo:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::ApiGatewayV2::Api"
+    DeletionPolicy: "Retain"
+    Properties:
+      RouteSelectionExpression: "$request.method $request.path"
+      DisableExecuteApiEndpoint: false
+      ProtocolType: "HTTP"
+      Tags: {}
+      Name: "add customer"
+  IAMGroup00apis3cogcfrontlambdaddb00DxiLa:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::IAM::Group"
+    DeletionPolicy: "Retain"
+    Properties:
+      GroupName: "api-s3-cog-cfront-lambda-ddb"
+      Path: "/"
+      ManagedPolicyArns:
+      - "arn:aws:iam::aws:policy/CloudWatchFullAccessV2"
+      - "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+      - "arn:aws:iam::aws:policy/AmazonCognitoPowerUser"
+      - "arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
+      - "arn:aws:iam::aws:policy/AWSLambda_FullAccess"
+      - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+      - "arn:aws:iam::aws:policy/CloudFrontFullAccess"
+  IAMRole00AmazonEventBridgeSchedulerLAMBDAb2c0eb535e00oIKqv:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::IAM::Role"
+    DeletionPolicy: "Retain"
+    Properties:
+      Path: "/service-role/"
+      ManagedPolicyArns:
+      - "arn:aws:iam::627389239307:policy/service-role/Amazon-EventBridge-Scheduler-Execution-Policy-9a420d00-691b-4c72-b8ea-9eaf85e09bf0"
+      MaxSessionDuration: 3600
+      RoleName: "Amazon_EventBridge_Scheduler_LAMBDA_b2c0eb535e"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Condition:
+            StringEquals:
+              aws:SourceAccount: "627389239307"
+          Action: "sts:AssumeRole"
+          Effect: "Allow"
+          Principal:
+            Service: "scheduler.amazonaws.com"
+  SchedulerSchedule00ebrnoticeprocessor00lFNgU:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Scheduler::Schedule"
+    DeletionPolicy: "Retain"
+    Properties:
+      GroupName: "default"
+      ScheduleExpression: "rate(10 minutes)"
+      Target:
+        Input: "{\n    \"email\": \"venu@m.com\",\n    \"date\": \"2024-04-01\",\n\
+          \    \"type\": \"eventbridge payload\"\n}"
+        Arn:
+          Fn::GetAtt:
+          - "LambdaFunction00lambdatestdummy00KxmMK"
+          - "Arn"
+        RetryPolicy:
+          MaximumEventAgeInSeconds: 86400
+          MaximumRetryAttempts: 30
+        RoleArn:
+          Fn::GetAtt:
+          - "IAMRole00AmazonEventBridgeSchedulerLAMBDAb2c0eb535e00oIKqv"
+          - "Arn"
+      Description: "reads notices X times a day and dispatches emails"
+      State: "DISABLED"
+      FlexibleTimeWindow:
+        Mode: "OFF"
+      ScheduleExpressionTimezone: "America/Los_Angeles"
+      Name: "ebr-notice-processor"
+  ApiGatewayV2Api00l6eifms8x700tuVYZ:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::ApiGatewayV2::Api"
+    DeletionPolicy: "Retain"
+    Properties:
+      RouteSelectionExpression: "$request.method $request.path"
+      DisableExecuteApiEndpoint: false
+      ProtocolType: "HTTP"
+      Tags: {}
+      Name: "register"
+  IAMManagedPolicy00policyserviceroleAmazonEventBridgeSchedulerExecutionPolicy9a420d00691b4c72b8ea9eaf85e09bf000J9Mow:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::IAM::ManagedPolicy"
+    DeletionPolicy: "Retain"
+    Properties:
+      ManagedPolicyName: "Amazon-EventBridge-Scheduler-Execution-Policy-9a420d00-691b-4c72-b8ea-9eaf85e09bf0"
+      Path: "/service-role/"
+      Description: ""
+      Groups: []
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Resource:
+          - "arn:aws:lambda:us-east-1:627389239307:function:lambda-test-dummy:*"
+          - "arn:aws:lambda:us-east-1:627389239307:function:lambda-test-dummy"
+          Action:
+          - "lambda:InvokeFunction"
+          Effect: "Allow"
+      Roles:
+      - Ref: "IAMRole00AmazonEventBridgeSchedulerLAMBDAb2c0eb535e00oIKqv"
+      Users: []
+  LambdaVersion00functionlambdaaddcustomer100iEtpU:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Lambda::Version"
+    DeletionPolicy: "Retain"
+    Properties:
+      FunctionName:
+        Ref: "LambdaFunction00lambdaaddcustomer00BPXg2"
+      Description: "basic customer creation, disposable, email validity, if already\
+        \ reg checks. does not yet insert item to db."
+      RuntimePolicy:
+        UpdateRuntimeOn: "Auto"
+      CodeSha256: "xl6CIJipNm3yMWh7Z/S6lEzOEtJCX62gIDRT8N00Uf8="
+  IAMManagedPolicy00policyCostExplorerAccess00KdnsW:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::IAM::ManagedPolicy"
+    DeletionPolicy: "Retain"
+    Properties:
+      ManagedPolicyName: "CostExplorerAccess"
+      Path: "/"
+      Description: ""
+      Groups:
+      - Ref: "IAMGroup00ebridgesessnscwatchq00oPBNC"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Resource: "*"
+          Action:
+          - "ce:GetCostAndUsage"
+          Effect: "Allow"
+      Roles: []
+      Users: []
+  SESEmailIdentity00onwhichdatecom00te4nO:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::SES::EmailIdentity"
+    DeletionPolicy: "Retain"
+    Properties:
+      DkimAttributes:
+        SigningEnabled: true
+      FeedbackAttributes:
+        EmailForwardingEnabled: true
+      EmailIdentity: "onwhichdate.com"
+      DkimSigningAttributes:
+        NextSigningKeyLength: "RSA_2048_BIT"
+      MailFromAttributes:
+        MailFromDomain: "email.onwhichdate.com"
+        BehaviorOnMxFailure: "USE_DEFAULT_VALUE"
+  LambdaPermission00functionlambdaaddreminder00bcisL:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Lambda::Permission"
+    DeletionPolicy: "Retain"
+    Properties:
+      FunctionName:
+        Fn::GetAtt:
+        - "LambdaFunction00lambdaaddreminder00doVsM"
+        - "Arn"
+      Action: "lambda:InvokeFunction"
+      SourceArn: "arn:aws:execute-api:us-east-1:627389239307:zaxc1ez97i/*/POST/reminder"
+      Principal: "apigateway.amazonaws.com"
+  SESEmailIdentity00jamestalbottgmailcom004AxrO:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::SES::EmailIdentity"
+    DeletionPolicy: "Retain"
+    Properties:
+      DkimAttributes:
+        SigningEnabled: false
+      FeedbackAttributes:
+        EmailForwardingEnabled: true
+      EmailIdentity: "james.talbott@gmail.com"
+      DkimSigningAttributes:
+        NextSigningKeyLength: "RSA_1024_BIT"
+      MailFromAttributes:
+        BehaviorOnMxFailure: "USE_DEFAULT_VALUE"
+  LambdaFunction00lambdaaddcustomer00BPXg2:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Lambda::Function"
+    DeletionPolicy: "Retain"
+    Properties:
+      MemorySize: 128
+      Description: ""
+      TracingConfig:
+        Mode: "PassThrough"
+      Timeout: 3
+      RuntimeManagementConfig:
+        UpdateRuntimeOn: "Auto"
+      Handler: "index.handler"
+      Code:
+        S3Bucket:
+          Ref: "LambdaFunction00lambdaaddcustomer00BPXg2CodeS3BucketOneOfqE2gb"
+        S3Key:
+          Ref: "LambdaFunction00lambdaaddcustomer00BPXg2CodeS3KeyOneOf66Rv6"
+      Role:
+        Fn::GetAtt:
+        - "IAMRole00lambdasespermissions00lG4Io"
+        - "Arn"
+      FileSystemConfigs: []
+      FunctionName: "lambda-add-customer"
+      Runtime: "nodejs20.x"
+      PackageType: "Zip"
+      LoggingConfig:
+        LogFormat: "Text"
+        LogGroup: "/aws/lambda/lambda-add-customer"
+      EphemeralStorage:
+        Size: 512
+      Layers:
+      - "arn:aws:lambda:us-east-1:627389239307:layer:owdlib:40"
+      Architectures:
+      - "arm64"
+  LambdaPermission00functionlambdainitialregistration00YXBLM:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Lambda::Permission"
+    DeletionPolicy: "Retain"
+    Properties:
+      FunctionName:
+        Fn::GetAtt:
+        - "LambdaFunction00lambdainitialregistration00DsqzU"
+        - "Arn"
+      Action: "lambda:InvokeFunction"
+      SourceArn: "arn:aws:execute-api:us-east-1:627389239307:l6eifms8x7/*/*/register"
+      Principal: "apigateway.amazonaws.com"
+  ApiGatewayV2Deployment00voujmm00iZibD:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::ApiGatewayV2::Deployment"
+    DeletionPolicy: "Retain"
+    Properties:
+      ApiId:
+        Ref: "ApiGatewayV2Api008mjx9kwd7g00hOYzo"
+      Description: "Automatic deployment triggered by changes to the Api configuration"
