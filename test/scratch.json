@@ -80,3 +80,44 @@
     "body": "{\n  \"name\": \"venujaya\",\n  \"email\": \"m.venugopal@gmail.com\",\n  \"cid\": \"HbWUAV7JaA6cio3A\",\n  \"cellNumber\": \"+17325995932\",\n  \"country\": \"us\",\n  \"state\": \"va\",\n  \"sendEmail\": \"true\",\n  \"sendSMS\": \"false\",\n  \"sendWhatsapp\": \"false\",\n  \"sendPush\": \"false\"\n}\n",
     "isBase64Encoded": false
 }
+
+{
+    "version": "2.0",
+    "routeKey": "GET /",
+    "rawPath": "/",
+    "rawQueryString": "",
+    "headers": {
+        "accept": "*/*",
+        "accept-encoding": "gzip, deflate, br",
+        "cache-control": "no-cache",
+        "content-length": "157",
+        "content-type": "application/json",
+        "host": "9olc1oroq4.execute-api.us-east-1.amazonaws.com",
+        "postman-token": "efa8bc9b-1771-4be5-969d-75538cbefe77",
+        "user-agent": "PostmanRuntime/7.36.3",
+        "x-amzn-trace-id": "Root=1-65ed35fa-38fcfcd9456137fd5124e81f",
+        "x-forwarded-for": "54.86.50.139",
+        "x-forwarded-port": "443",
+        "x-forwarded-proto": "https"
+    },
+    "requestContext": {
+        "accountId": "627389239307",
+        "apiId": "9olc1oroq4",
+        "domainName": "9olc1oroq4.execute-api.us-east-1.amazonaws.com",
+        "domainPrefix": "9olc1oroq4",
+        "http": {
+            "method": "GET",
+            "path": "/",
+            "protocol": "HTTP/1.1",
+            "sourceIp": "54.86.50.139",
+            "userAgent": "PostmanRuntime/7.36.3"
+        },
+        "requestId": "UZVfKj5-oAMEJ3Q=",
+        "routeKey": "GET /",
+        "stage": "$default",
+        "time": "10/Mar/2024:04:24:26 +0000",
+        "timeEpoch": 1710044666308
+    },
+    "body": "{\n    \"prompt\": \"generate a 1 sentence superlative and humorous testimonial praising a webpage. It should be wildly aggrandizing and difficult to believe.\"\n}",
+    "isBase64Encoded": false
+}
