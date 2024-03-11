@@ -107,7 +107,5 @@ const dbNoticeSchema = {
 };
 
 owd.log(owd.getVersion(), "version");
-owd.log(owd.getOffsetDates("2030-10-08", [0, 60, 240]), "", false);
 owd.log(owd.getFriendlyDate("2024-03-30"));
-
-owd.log(owd.getHtmlFromMarkdown("## Hello\n\nThis is a test </div>"), "html");
+owd.log(owd.getOffsetDates("2024-03-12", [60, 240]), "");

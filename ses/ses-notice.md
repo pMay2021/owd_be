@@ -8,6 +8,10 @@ Your item:
 
 Notes: {{notes}}
 
+Already actioned it? confirm and delete > {{deleteMagicLink}}
+
+Login to see all your reminders > {{magicLink}} (_expires in 1 hour_)
+
 ---
 
 {{referenceLinks}}
