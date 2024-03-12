@@ -107,12 +107,6 @@ const dbNoticeSchema = {
   notes: "", //added by customer at the time of creation
 };
 
-owd.log(owd.getVersion(), "version");
+owd.log(owd.getVersion(), "versions");
 owd.log(owd.getFriendlyDate("2024-03-30"));
 owd.log(owd.getOffsetDates("2024-03-12", [60, 240]), "");
-
-const secretKey = crypto.randomBytes(32); // Key should be 256 bits for aes-256-cbc
-
-const encrypted = owd.encryptWithExpiry('test@example.com', new Date(), secretKey);
-const email = owd.decryptWithExpiry(encrypted, secretKey);
-console.log(email); // Output: test@example.com (if within 15 minutes)
