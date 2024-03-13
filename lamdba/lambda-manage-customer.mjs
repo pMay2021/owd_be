@@ -95,7 +95,7 @@ export const handler = async (event, context) => {
       const im = await db.updateItem("db-customer", item, item.cid);
       owd.log(im, "successfully updated db-customer:");
 
-      const data = { email: email, name: "Subscriber" };
+      const data = { email: email, name: "Subscriber", magicLink: "https://onwhichdate.com/login?email=" + email + "&token=" + item.magicCode.S };
       await ch.sendEmail(fromEmail, devEmail, "Welcome", data);
     } else if (command === "update") {
       body = JSON.parse(event.body);
