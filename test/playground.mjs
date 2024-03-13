@@ -1,5 +1,5 @@
 import * as owd from "../lib/owd.mjs";
-import * as crypto from 'crypto';
+import * as codes from "../lib/codes.mjs";
 // sample for PUT
 const body_PUT = {
   nickName: "venappan",
@@ -110,3 +110,4 @@ const dbNoticeSchema = {
 owd.log(owd.getVersion(), "versions");
 owd.log(owd.getFriendlyDate("2024-03-30"));
 owd.log(owd.getOffsetDates("2024-03-12", [60, 240]), "");
+owd.log(owd.getResponseJSON(200, "Email failed badly"));
