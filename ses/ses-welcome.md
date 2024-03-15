@@ -1,27 +1,27 @@
+Dear valued member,
 
-Dear {{name}},
+Thank you for confirming your email. Welcome to OnWhichDate! We're excited to have you on board. 
 
-Welcome to OnWhichDate.com! Thank you for verifying your registration. Your login account is:
+For your reference, your registered email is: `{{email}}`
 
-` {{email}}` 
+**Password-Free Access for Enhanced Security**
+At OnWhichDate, we prioritize your security and convenience. That's why we've introduced a password-free login system. Simply visit our [login page](https://onwhichdate.com/login), enter your email, and a secure magic link will be sent to you. Click it, and you're in. This link is your key to quick and safe access, eliminating the hassle of remembering and entering passwords.
 
-We have no passwords! Whenever you need to login, head over to [https://onwhichdate.com](https://onwhichdate.com/login), enter your email and click the magic link sent to you. This is secure, and you never have to store and remember a password for us.
-
-For the next 60 minutes, you can use the link below to login immediately.
+**Immediate Login - Your Magic Link Awaits**
+For the next 60 minutes, you can log in instantly using the following magic link:
 
 {{magicLink}}
 
-We suggest you start with a few important documents to get started. Our 'Quick' method is a great starting point. (look for ⚡ quick in the left panel).
+**Kickstart Your Journey with Us**
+To ensure a smooth start, we recommend exploring these essential resources:
 
-**Additional References**
+1. **Set Your Preferences**: Customize your experience by setting defaults in your [account](https://onwhichdate.com/account). It's a great time-saver!
+2. **Learn Pro Tips**: Discover efficient techniques and cool features on our [tips page](https://onwhichdate.com/tips) – they're game-changers!
+3. **Explore Our Plans**: Check out [our plans](https://onwhichdate.com/plans) – designed to be incredibly affordable and cater to all your needs.
+4. **Your Voice Matters**: Suggestions or facing an issue? Please reach out through our [support center](https://onwhichdate.com/support). We're here to help!
 
-1. go to [account](https://onwhichdate.com/account) to set some defaults, they'll save you time.
-3. visit [tips](https://onwhichdate.com/tips) for some cool techniques that'll save you even more time!
-4. check out [our plans](https://onwhichdate.com/plans) - they're amazingly affordable.
-5. we're always listening; got suggestions or issues? go to [support](https://onwhichdate.com/support) to submit them.
+We're committed to providing you with an exceptional experience and look forward to being a part of your journey for years to come.
 
-We hope to serve you years to come,
+Warm regards,
 
-sincerely, 
-
-team OWD!
+The OnWhichDate Team
