@@ -4,6 +4,7 @@
  
  * change log
  * ----------
+ * v1.0.3 verify works (register -> verify) + improved log levels
  * v1.0.2 with getParameter and register magic link works
  * v1.0.1 basic, with proper api mgmt
  */
@@ -15,6 +16,7 @@ const devEmail = "m.venugopal@gmail.com";
 const fromEmail = "notice@onwhichdate.com";
 const today = new Date();
 const magicCodeExpiryMinutes = 15 * 60000;
+const logLevel = process.env.LOG;
 
 const getCountryFromLanguage = (lang) => {
   //TODO later
@@ -46,10 +48,10 @@ const sendVerificationEmail = async (email, cid) => {
     magicCode: { S: magicCode }, // generate a magic code to use as a link in magic links
     magicCodeExpiresAt: { S: new Date(today.getTime() + 60 * 24 * 60000) }, //e
   };
-  owd.log(item, "preparing to send email: " + magicLink + " to " + cid);
+  owd.log(item, "preparing to send email: " + magicLink + " to " + cid, logLevel);
   const im = await db.updateItem("db-customer", item, cid);
   const r = await ch.sendEmail(fromEmail, devEmail, "verify-account", data);
-  owd.log(r, "sent email to " + devEmail + " with magic link: " + magicLink);
+  owd.log(r, "sent email to " + devEmail + " with magic link: " + magicLink, logLevel);
 };
 
 export const handler = async (event, context) => {
@@ -57,9 +59,8 @@ export const handler = async (event, context) => {
     // Extract the command from the API path
     const command = event.pathParameters?.proxy;
     owd.log(owd.getVersion(), "\nLib version (note: command = " + command + ")");
-    const logLevel = await db.getParameter("LOG_LEVEL");
-    owd.log(db.getVersion(), "\nDB version (note: command = " + logLevel + ")");
-    owd.log(ch.getVersion(), "\nChannels version");
+    owd.log(db.getVersion(), "\nDB version (note: log level = " + logLevel + ")", logLevel);
+    owd.log(ch.getVersion(), "\nChannels version", logLevel);
 
     // Extract the variables based on the command
     let email, body;
@@ -70,7 +71,7 @@ export const handler = async (event, context) => {
       //a new customer just registered
       email = event.queryStringParameters?.email;
       if (!owd.isValidEmail(email) || isDisposable(email)) {
-        return owd.getResponseJSON(400, (email + ": please use a valid email and non-disposable domain."));
+        return owd.getResponseJSON(400, email + ": please use a valid email and non-disposable domain.");
       }
       const { alreadyExists, isVerified, item } = await isCustomerVerified(email);
       let mm = `${alreadyExists} ${isVerified} ${item}`;
@@ -106,25 +107,29 @@ export const handler = async (event, context) => {
         throw new Error("customer not found: " + email);
       }
 
-      const dbEmail = items[0].email.S;
-      const magicCode = items[0].magicCode.S;
+      const item = items[0];
+
+      const dbEmail = item.email.S;
+      const magicCode = item.magicCode.S;
       const token = event.queryStringParameters?.token;
       if (token !== magicCode || dbEmail !== email) {
-        throw new Error(`invalid email or token: Unable to verify: ${email} : ${token}`);
+        return owd.getResponseJSON(401, `invalid/expired token: please retry registration and click on new email: ${email}`);
       }
 
-      if (Date(items[0].magicCodeExpiresAt.S) < Date.now()) {
-        await sendVerificationEmail(email, items[0].cid.S);
+      owd.log(items[0], "about to check codes: ", false);
+
+      if (Date(item.magicCodeExpiresAt.S) < Date.now()) {
+        await sendVerificationEmail(email, items[0].pk.S);
         return owd.getResponseJSON(`Magic code expired. We've sent a new email, please check and click.: ${email}`);
       }
       //the customer is now verified
-      const item = {
+      const updateItem = {
         verified: { BOOL: true },
         magicCode: { S: owd.getShortId() }, // generate a new magic code
-        magicCodeExpiresAt: { S: new Date(today.getTime() + 15 * 60000) }, //expires in 15 minutes
+        magicCodeExpiresAt: { S: new Date(today.getTime() + magicCodeExpiryMinutes) }, //expires in 15 minutes
       };
-      const im = await db.updateItem("db-customer", item, item.cid);
-      owd.log(im, "successfully updated db-customer:", false);
+      const im = await db.updateItem("db-customer", updateItem, item.pk.S);
+      owd.log(im, "successfully updated db-customer:", logLevel);
 
       //send them a welcome email and a login link
       const data = { email: email, name: "Subscriber", magicLink: "https://onwhichdate.com/login?email=" + email + "&token=" + item.magicCode.S };
@@ -162,7 +167,7 @@ export const handler = async (event, context) => {
       };
 
       const im = await db.updateItem("db-customer", item, body.cid);
-      owd.log(im, "successfully updated db-customer:", false);
+      owd.log(im, "successfully updated db-customer:", logLevel);
     }
     return owd.getResponseJSON(200, "success");
   } catch (error) {
