@@ -1,4 +1,8 @@
 import * as owd from "../lib/owd.mjs";
+import dotenv from 'dotenv';
+dotenv.config();
+
+
 // sample for PUT
 const body_PUT = {
   nickName: "venappan",
@@ -13,8 +17,7 @@ const body_PUT = {
   sendPush: "false",
 };
 
-const reminder_POST = 
-{
+const reminder_POST = {
   version: "2.0",
   routeKey: "POST /reminders",
   rawPath: "/reminders",
@@ -51,24 +54,24 @@ const reminder_POST =
     time: "04/Mar/2024:04:00:56 +0000",
     timeEpoch: 1709524856990,
   },
-  body:{
-    "docId": "travel#passport",
-    "cid": "XhEUkjDKUjpp6hW",
-    "loc": "us#na",
-    "expiresOn": "2033-07-01",
-    "sendSMS": "true",
-    "sendEmail": "true",
-    "sendPush": "true",
-    "sendWhatsapp": "true",
-    "additionalSends": [
-        {
-            "email": "jose@test.com",
-            "cell": "+1222555999",
-            "sendEmail": "true",
-            "sendSMS": "false"
-        }
+  body: {
+    docId: "travel#passport",
+    cid: "XhEUkjDKUjpp6hW",
+    loc: "us#na",
+    expiresOn: "2033-07-01",
+    sendSMS: "true",
+    sendEmail: "true",
+    sendPush: "true",
+    sendWhatsapp: "true",
+    additionalSends: [
+      {
+        email: "jose@test.com",
+        cell: "+1222555999",
+        sendEmail: "true",
+        sendSMS: "false",
+      },
     ],
-    "notes": "for self"
+    notes: "for self",
   },
   isBase64Encoded: false,
 };
@@ -106,6 +109,7 @@ const dbNoticeSchema = {
   notes: "", //added by customer at the time of creation
 };
 
-owd.log(owd.getVersion(), "versions");
 owd.log(owd.getFriendlyDate("2024-03-30"));
-owd.err(owd.getResponseJSON(200, "Email failed badly"));
+owd.log(owd.getResponseJSON(200, "Email failed badly"));
+owd.info(owd.getOffsetDates("2027-10-08", ['35', '47', '92', '0', '1', '7']), "offsetdates");
+
