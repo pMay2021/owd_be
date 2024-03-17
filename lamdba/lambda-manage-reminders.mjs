@@ -7,6 +7,7 @@
  *
  * change log
  * ----------
+ * v1.0.4 - delete and update code, change in schema; delete and update work
  * v1.0.3 - logging improvements and minor fixes, notice additions work; add works, need to extend to commands with add, delete, update
  * v1.0.2 - layer updated, code updated for revised schema
  * v1.0.1 basic version works through test and POST
@@ -22,6 +23,7 @@ export const handler = async (event, context) => {
   const command = event.pathParameters?.proxy;
   if (!command) return owd.Response(400, "Missing/Invalid command");
 
+  const hour = new Date().getHours().toString().padStart(2, "0");
   const runDisplay = {
     libVersion: owd.getVersion(),
     dbVersion: db.getVersion(),
@@ -32,11 +34,9 @@ export const handler = async (event, context) => {
   owd.info(runDisplay, "Execution Variables");
   const body = JSON.parse(event.body);
   owd.info(body, "The incoming body");
-
+  const { cid, docId, expiresOn } = body;
   try {
     if (command === "add") {
-      const { cid, docId, expiresOn } = body;
-
       // Validate input parameters
       if (!cid || !expiresOn) {
         throw new Error("Missing required parameters.");
@@ -48,64 +48,61 @@ export const handler = async (event, context) => {
 
       owd.debug(customerDb, "Retrieved customer details:");
 
-      let [pk, sk] = docId.split("|");
-      owd.log({ pk: pk, sk: sk }, "pk and sk");
-      const docDb = await db.getItem("db-document", pk, sk);
+      let [dpk, dsk] = docId.split("|");
+      const docDb = await db.getItem("db-document", dpk, dsk);
       if (!docDb) {
-        return owd.Response(404, "Document not found for " + pk + " " + sk);
+        return owd.Response(404, "Document not found for " + dpk + " " + dsk);
       }
-      owd.log(docDb, "Retrieved document details:");
+      owd.debug(docDb, "Retrieved document details:");
 
       const offsetArray = docDb.reminderOffsetDays.L.map((x) => x.N);
-      console.log("entering create and insert");
+      console.debug("entering create and insert");
       const newDates = await createAndInsertNotices(offsetArray, docDb);
       const retJson = { notices: newDates };
       const nd = newDates?.map((m) => m.date.date + " | " + m.date.dueInDays);
-      owd.info(nd, "constructed new dates");
+      owd.info(nd, "Constructed new dates");
       return owd.Response(200, JSON.stringify(retJson));
     }
+
     if (command === "delete") {
       //delete a specific notice
       const { id } = body;
       if (!id) return owd.Response(400, "Missing/Invalid id");
 
-      const [pk, sk] = id.split("|");
-
-      const noticeDb = await db.getItem("db-notice", pk, sk);
+      const noticeDb = await db.getItem("db-notices", id);
       if (!noticeDb) return owd.Response(404, "Notice not found");
 
       if (goModify) {
-        const resp = await db.deleteItem("db-notice", pk, sk);
+        const resp = await db.deleteItem("db-notices", id);
         owd.info(resp, "Deleted notice from db:");
       } else {
         owd.debug("Skipping actual db operation", "");
       }
-      return owd.Response(200, "Deleted notice " + id);
+      return owd.Response(200, "Deleted notice: " + id);
     }
 
     if (command === "update") {
-      const { originalId, newDate, ...noticeData } = body;
-      if (!originalId || !newDate) {
-        return owd.Response(400, "Missing/Invalid parameters for update");
-      }
-      const [originalPk, originalSk] = originalId.split("|");
-      const originalNotice = await db.getItem("db-notice", originalPk, originalSk);
-      if (!originalNotice) {
-        return owd.Response(404, "Original notice not found");
-      }
-      if (goModify) {
-        const deleteResp = await db.deleteItem("db-notice", originalPk, originalSk);
-        owd.info(deleteResp, "Deleted original notice from db:");
-        const offsetArray = originalNotice.daysRemaining.N > 0 ? [originalNotice.daysRemaining.N] : [];
-        const newDates = await createAndInsertNotices(offsetArray, { ...noticeData, expiresOn: newDate });
-        const retJson = { notices: newDates };
-        const nd = newDates?.map((m) => m.date.date + " | " + m.date.dueInDays);
-        owd.info(nd, "Constructed new dates");
-        return owd.Response(200, JSON.stringify(retJson));
-      } else {
-        owd.debug("Skipping actual db operation", "");
-        return owd.Response(200, "Update skipped");
-      }
+      const id = body.id;
+      if (!id) return owd.Response(400, "Missing/Invalid id");
+      const noticeDb = await db.getItem("db-notices", id);
+      if (!noticeDb) return owd.Response(404, "Notice not found");
+
+      const daysRemainingObj = owd.getFriendlyDateDifference(body.date, noticeDb.originalExpiryOn.S);
+
+      const noticeItem = {
+        pk: { S: noticeDb.pk.S },
+        slot: { S: body.date + "#" + hour },
+        addedOn: { S: new Date().toISOString() },
+        isParent: { BOOL: daysRemainingObj.isToday },
+        alsoCC: { BOOL: body.alsoCC },
+        daysRemaining: { S: JSON.stringify(daysRemainingObj) },
+        notes: { S: body.notes },
+      };
+
+      const resp = await db.updateItem("db-notices", noticeItem);
+      owd.info(resp, "Updated notice in db:");
+    } else {
+      owd.debug("Skipping actual db operation", "");
     }
   } catch (error) {
     owd.error(error.message);
@@ -116,46 +113,46 @@ export const handler = async (event, context) => {
 
     return owd.Response(500, JSON.stringify(obj));
   }
-};
 
-async function createAndInsertNotices(offsetArray, docDb) {
-  const newDates = owd.getOffsetDates(expiresOn, offsetArray);
-  const ret = [];
+  async function createAndInsertNotices(offsetArray, docDb) {
+    const newDates = owd.getOffsetDates(expiresOn, offsetArray);
+    const ret = [];
 
-  for (const date of newDates) {
-    const hour = new Date().getHours().toString().padStart(2, "0");
-    const pk = date.date + "#" + hour;
-    const sk = owd.getShortId();
-    const noticeItem = {
-      pk: { S: pk },
-      sk: { S: sk }, //the shortId ensures uniqueness
-      cid: { S: cid },
-      isAlreadySent: { BOOL: false },
-      addedOn: { S: new Date().toISOString() },
-      isParent: { BOOL: date.offsetNumber === 0 },
-      originalExpiryOn: { S: newDates[0].date },
-      documentId: { S: docDb.pk.S + "|" + docDb.sk.S },
-      sendSMS: { BOOL: body.sendSMS },
-      sendEmail: { BOOL: body.sendEmail },
-      sendPush: { BOOL: body.sendPush },
-      sendWhatsapp: { BOOL: body.sendWhatsapp },
-      alsoCC: { BOOL: body.alsoCC },
-      daysRemaining: { N: date.dueInDays },
-      notes: { S: body.notes },
-    };
+    for (const date of newDates) {
+      const slot = date.date + "#" + hour;
+      const pk = owd.getShortId(25);
+      const noticeItem = {
+        pk: { S: pk },
+        cid: { S: cid },
+        slot: { S: slot },
+        type: { S: "notice" },
+        isAlreadySent: { BOOL: false },
+        addedOn: { S: new Date().toISOString() },
+        isParent: { BOOL: date.offsetNumber === 0 },
+        originalExpiryOn: { S: newDates[0].date },
+        documentId: { S: docDb.pk.S + "|" + docDb.sk.S },
+        sendSMS: { BOOL: body.sendSMS },
+        sendEmail: { BOOL: body.sendEmail },
+        sendPush: { BOOL: body.sendPush },
+        sendWhatsapp: { BOOL: body.sendWhatsapp },
+        alsoCC: { BOOL: body.alsoCC },
+        notes: { S: body.notes },
+        daysRemaining: { S: JSON.stringify(date) },
+      };
 
-    owd.log(noticeItem, "Constructed notice entry for:");
-    if (goModify) {
-      const resp = await db.putItem("db-notice", noticeItem);
-      owd.info(resp, "Added notice to db:");
-    } else {
-      owd.debug("Skipping actual db operation", "");
+      owd.log(noticeItem, "Constructed notice entry for:");
+      if (goModify) {
+        const resp = await db.putItem("db-notices", noticeItem);
+        owd.info(resp, "Added notice to db:");
+      } else {
+        owd.debug("Skipping actual db operation", "");
+      }
+
+      ret.push({
+        id: pk,
+        date: date,
+      });
     }
-
-    ret.push({
-      id: pk + "|" + sk,
-      date: date,
-    });
+    return ret;
   }
-  return ret;
-}
+};
