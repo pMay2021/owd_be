@@ -1,21 +1,34 @@
 /*
- * this code adds notices based on the reminder offsets of a document
+ * this code manages (add, delete, update) notices
+ * add: when customer adds a document, notices are created for the expiry dates
+ * delete: when customer deletes a document, all notices are deleted, or deletes a specific notice
+ * update: when customer updates a specific notice
+ * We do not support update of the expiry date of the document, as that would require a cascade update of all notices
  *
  * change log
  * ----------
+ * v1.0.3 - logging improvements and minor fixes, notice additions work; add works, need to extend to commands with add, delete, update
  * v1.0.2 - layer updated, code updated for revised schema
  * v1.0.1 basic version works through test and POST
  */
 
 import * as owd from "/opt/nodejs/node20/owd.mjs";
 import * as db from "/opt/nodejs/node20/owddb.mjs";
+const goModify = process.env.DB_MODIFY === "TRUE" ? true : false;
 
-const goModify = true; //set to true to enable actual db operations
+const logLevel = process.env.LOG_LEVEL || "DEBUG"; //set to true to enable actual db operations
 
 export const handler = async (event, context) => {
-  owd.log(owd.getVersion(), "\nLib version (note: goModify = " + goModify + ")");
-  owd.log(event.body);
+  const runDisplay = {
+    libVersion: owd.getVersion(),
+    dbVersion: db.getVersion(),
+    logLevel: logLevel,
+    dbOps: goModify,
+  };
+
+  owd.info(runDisplay, "Execution Variables");
   const body = JSON.parse(event.body);
+  owd.info(body, "The incoming body");
   const { cid, docId, expiresOn } = body;
 
   try {
@@ -26,43 +39,33 @@ export const handler = async (event, context) => {
 
     const customerDb = await db.getItem("db-customer", cid);
 
-    if (!customerDb) {
-      throw new Error("Customer not found.");
-    }
-    owd.log(customerDb, "\nRetrieved customer details:", true);
+    if (!customerDb) return owd.Response(404, "Customer not found")
+    
+    owd.debug(customerDb, "Retrieved customer details:");
 
     let [pk, sk] = docId.split("|");
+    owd.log({ pk: pk, sk: sk }, "pk and sk");
     const docDb = await db.getItem("db-document", pk, sk);
     if (!docDb) {
-      throw new Error("Document not found.");
+      return owd.Response(404, "Document not found for " + pk + " " + sk);
     }
-    owd.log(docDb, "\nRetrieved document details:", true);
+    owd.log(docDb, "Retrieved document details:");
 
     const offsetArray = docDb.reminderOffsetDays.L.map((x) => x.N);
+    console.log("entering create and insert");
     const newDates = await createAndInsertNotices(offsetArray, docDb);
     const retJson = { notices: newDates };
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        message: "Added reminders successfully!",
-        data: retJson,
-      }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
+    const nd = newDates?.map((m) => m.date.date + " | " + m.date.dueInDays);
+    owd.info(nd, "constructed new dates");
+    return owd.Response(200, JSON.stringify(retJson));
   } catch (error) {
-    console.error(error);
-
-    // Return an error response
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: "Failed to retrieve item", event: JSON.stringify(event) }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
+    owd.error(error.message);
+    const obj = {
+      message: error.message,
+      event: event
+    }
+    
+    return owd.Response(500, JSON.stringify(obj));
   }
 
   async function createAndInsertNotices(offsetArray, docDb) {
@@ -91,12 +94,12 @@ export const handler = async (event, context) => {
         notes: { S: body.notes },
       };
 
-      owd.log(noticeItem, "\nConstructed notice entry for:", true);
+      owd.log(noticeItem, "Constructed notice entry for:");
       if (goModify) {
         const resp = await db.putItem("db-notice", noticeItem);
-        owd.log(resp, "\nAdded notice to db:", false);
+        owd.info(resp, "Added notice to db:");
       } else {
-        owd.log("Skipping actual db operation", "\n", true);
+        owd.debug("Skipping actual db operation", "");
       }
 
       ret.push({
