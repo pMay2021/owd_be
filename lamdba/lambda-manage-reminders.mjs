@@ -82,27 +82,33 @@ export const handler = async (event, context) => {
     }
 
     if (command === "update") {
+      owd.debug(body, "now executing update with id=:" + body.id);
       const id = body.id;
       if (!id) return owd.Response(400, "Missing/Invalid id");
       const noticeDb = await db.getItem("db-notices", id);
       if (!noticeDb) return owd.Response(404, "Notice not found");
 
       const daysRemainingObj = owd.getFriendlyDateDifference(body.date, noticeDb.originalExpiryOn.S);
+      owd.log(daysRemainingObj, "daysRemainingObj");
 
       const noticeItem = {
-        pk: { S: noticeDb.pk.S },
         slot: { S: body.date + "#" + hour },
         addedOn: { S: new Date().toISOString() },
         isParent: { BOOL: daysRemainingObj.isToday },
         alsoCC: { BOOL: body.alsoCC },
-        daysRemaining: { S: JSON.stringify(daysRemainingObj) },
+        dueInDays: { N: daysRemainingObj.totalDaysDifference + "" },
         notes: { S: body.notes },
       };
 
-      const resp = await db.updateItem("db-notices", noticeItem);
-      owd.info(resp, "Updated notice in db:");
-    } else {
-      owd.debug("Skipping actual db operation", "");
+      owd.debug(noticeItem, "constructed noticeItem");
+
+      if (goModify) {
+        const resp = await db.updateItem("db-notices", noticeItem, id);
+        return owd.Response(200, "successfully updated record");
+      } else {
+        owd.debug("Skipping actual db operation", "");
+        return owd.Response(200, "skipped update/but successful operation");
+      }
     }
   } catch (error) {
     owd.error(error.message);
@@ -110,7 +116,6 @@ export const handler = async (event, context) => {
       message: error.message,
       event: event,
     };
-
     return owd.Response(500, JSON.stringify(obj));
   }
 
@@ -137,7 +142,7 @@ export const handler = async (event, context) => {
         sendWhatsapp: { BOOL: body.sendWhatsapp },
         alsoCC: { BOOL: body.alsoCC },
         notes: { S: body.notes },
-        daysRemaining: { S: JSON.stringify(date) },
+        dueInDays: { N: date.dueInDays },
       };
 
       owd.log(noticeItem, "Constructed notice entry for:");
