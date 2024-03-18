@@ -7,6 +7,7 @@
  *
  * change log
  * ----------
+ * v1.0.5 - new layer, better error check on delete
  * v1.0.4 - delete and update code, change in schema; delete and update work
  * v1.0.3 - logging improvements and minor fixes, notice additions work; add works, need to extend to commands with add, delete, update
  * v1.0.2 - layer updated, code updated for revised schema
@@ -65,12 +66,19 @@ export const handler = async (event, context) => {
     }
 
     if (command === "delete") {
+      
       //delete a specific notice
-      const { id } = body;
-      if (!id) return owd.Response(400, "Missing/Invalid id");
+      
+      const { id, email } = event.queryStringParameters;
+      if (!id || !email) return owd.Response(400, "Missing/Invalid id and email");
 
       const noticeDb = await db.getItem("db-notices", id);
       if (!noticeDb) return owd.Response(404, "Notice not found");
+      
+      const cdb = await db.getCustomerByEmail(email);
+      if (!cdb) return owd.Response(404, "customer not found");
+      
+      if(cdb.pk.S != noticeDb.cid.S) return owd.Response(404, "customer/notice mismatch; verification failed " + cdb.pk.S + " " + noticeDb.cid.S);
 
       if (goModify) {
         const resp = await db.deleteItem("db-notices", id);
@@ -122,15 +130,16 @@ export const handler = async (event, context) => {
   async function createAndInsertNotices(offsetArray, docDb) {
     const newDates = owd.getOffsetDates(expiresOn, offsetArray);
     const ret = [];
+    const type = "notice"
 
     for (const date of newDates) {
-      const slot = date.date + "#" + hour;
+      const slot = date.date + "#" + hour + "#" + type; //e.g., 2028_11_28#21#notice; with this we can only query notices by type and slot
       const pk = owd.getShortId(25);
       const noticeItem = {
         pk: { S: pk },
         cid: { S: cid },
         slot: { S: slot },
-        type: { S: "notice" },
+        type: { S: type },
         isAlreadySent: { BOOL: false },
         addedOn: { S: new Date().toISOString() },
         isParent: { BOOL: date.offsetNumber === 0 },

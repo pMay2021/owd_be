@@ -110,6 +110,4 @@ const dbNoticeSchema = {
 };
 
 owd.log(owd.getFriendlyDate("2024-03-30"));
-owd.log(owd.getResponseJSON(200, "Email failed badly"));
-owd.info(owd.getOffsetDates("2027-10-08", ['35', '47', '92', '0', '1', '7']), "offsetdates");
-
+owd.log(owd.getMagicLink(30));
