@@ -1,0 +1,4 @@
+GET https://44dad13dwb.execute-api.us-east-1.amazonaws.com/v1/api/reminders/get?n=3&cid=LtqCc253FcweDLI HTTP/1.1
+content-type: application/json
+
+{}

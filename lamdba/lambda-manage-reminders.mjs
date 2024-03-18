@@ -7,6 +7,7 @@
  *
  * change log
  * ----------
+ * v1.0.6 - now with new db layer with PartiQL, support for get
  * v1.0.5 - new layer, better error check on delete
  * v1.0.4 - delete and update code, change in schema; delete and update work
  * v1.0.3 - logging improvements and minor fixes, notice additions work; add works, need to extend to commands with add, delete, update
@@ -17,7 +18,6 @@
 import * as owd from "/opt/nodejs/node20/owd.mjs";
 import * as db from "/opt/nodejs/node20/owddb.mjs";
 const goModify = process.env.DB_MODIFY === "TRUE" ? true : false;
-
 const logLevel = process.env.LOG_LEVEL || "DEBUG"; //set to true to enable actual db operations
 
 export const handler = async (event, context) => {
@@ -36,6 +36,7 @@ export const handler = async (event, context) => {
   const body = JSON.parse(event.body);
   owd.info(body, "The incoming body");
   const { cid, docId, expiresOn } = body;
+
   try {
     if (command === "add") {
       // Validate input parameters
@@ -62,23 +63,22 @@ export const handler = async (event, context) => {
       const retJson = { notices: newDates };
       const nd = newDates?.map((m) => m.date.date + " | " + m.date.dueInDays);
       owd.info(nd, "Constructed new dates");
-      return owd.Response(200, JSON.stringify(retJson));
+      return owd.Response(200, retJson);
     }
 
     if (command === "delete") {
-      
       //delete a specific notice
-      
+
       const { id, email } = event.queryStringParameters;
-      if (!id || !email) return owd.Response(400, "Missing/Invalid id and email");
+      if (!id || !email) return owd.Response(400, "Missing/Invalid id and/or email");
 
       const noticeDb = await db.getItem("db-notices", id);
       if (!noticeDb) return owd.Response(404, "Notice not found");
-      
+
       const cdb = await db.getCustomerByEmail(email);
-      if (!cdb) return owd.Response(404, "customer not found");
-      
-      if(cdb.pk.S != noticeDb.cid.S) return owd.Response(404, "customer/notice mismatch; verification failed " + cdb.pk.S + " " + noticeDb.cid.S);
+      if (!cdb) return owd.Response(404, `Customer ${email} not found`);
+
+      if (cdb.pk.S != noticeDb.cid.S) return owd.Response(404, "Customer/notice mismatch; verification failed " + cdb.pk.S + " " + noticeDb.cid.S);
 
       if (goModify) {
         const resp = await db.deleteItem("db-notices", id);
@@ -92,9 +92,9 @@ export const handler = async (event, context) => {
     if (command === "update") {
       owd.debug(body, "now executing update with id=:" + body.id);
       const id = body.id;
-      if (!id) return owd.Response(400, "Missing/Invalid id");
+      if (!id) return owd.Response(400, "Missing/Invalid id: " + id);
       const noticeDb = await db.getItem("db-notices", id);
-      if (!noticeDb) return owd.Response(404, "Notice not found");
+      if (!noticeDb) return owd.Response(404, "Notice not found: " + id);
 
       const daysRemainingObj = owd.getFriendlyDateDifference(body.date, noticeDb.originalExpiryOn.S);
       owd.log(daysRemainingObj, "daysRemainingObj");
@@ -118,6 +118,31 @@ export const handler = async (event, context) => {
         return owd.Response(200, "skipped update/but successful operation");
       }
     }
+
+    if (command === "get") {
+      //TODO for now we don't limit reads, we'll pull all parent notices
+      const { n, cid } = event.queryStringParameters;
+      const items = await db.getParentNoticesByCid(cid);
+      owd.log(items, "items");
+      if (!items || items.Count === 0) return owd.Response(404, "No data for customer");
+      const ret = items
+        ?.map((n) => {
+          owd.log(n, "iterating on n");
+          const i = {
+            doc: n.documentId.S,
+            expires: n.originalExpiryOn.S,
+            dueIn: n.dueInDays.N,
+            type: n.type.S,
+          };
+
+          return i;
+        })
+        .filter((f) => f.type == "notice");
+
+      return owd.Response(200, ret);
+    }
+
+    return owd.Response(404, { message: "unknown command", event: event });
   } catch (error) {
     owd.error(error.message);
     const obj = {
@@ -130,11 +155,12 @@ export const handler = async (event, context) => {
   async function createAndInsertNotices(offsetArray, docDb) {
     const newDates = owd.getOffsetDates(expiresOn, offsetArray);
     const ret = [];
-    const type = "notice"
+    const type = "notice";
 
     for (const date of newDates) {
       const slot = date.date + "#" + hour + "#" + type; //e.g., 2028_11_28#21#notice; with this we can only query notices by type and slot
       const pk = owd.getShortId(25);
+      owd.log(date, "loop date");
       const noticeItem = {
         pk: { S: pk },
         cid: { S: cid },
@@ -142,7 +168,7 @@ export const handler = async (event, context) => {
         type: { S: type },
         isAlreadySent: { BOOL: false },
         addedOn: { S: new Date().toISOString() },
-        isParent: { BOOL: date.offsetNumber === 0 },
+        isParent: { BOOL: date.dueInDays === "0" },
         originalExpiryOn: { S: newDates[0].date },
         documentId: { S: docDb.pk.S + "|" + docDb.sk.S },
         sendSMS: { BOOL: body.sendSMS },
