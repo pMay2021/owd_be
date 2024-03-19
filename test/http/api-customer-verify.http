@@ -1,0 +1,6 @@
+POST https://77uxp6az23.execute-api.us-east-1.amazonaws.com/v1/api/customer/verify?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoia05zZFdBN2o1NmtmMkhEIiwiaWF0IjoxNzEwODg5MjcxLCJleHAiOjE3MTA4OTI4NzF9.sp0ur7GozwwoI34XPWRD18O31GaHlC_HtbKxqqHAoC8&email=m.v4@gmail.com HTTP/1.1
+content-type: application/json
+
+{
+}
+
