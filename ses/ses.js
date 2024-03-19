@@ -10,8 +10,7 @@ const { exec } = require("child_process");
 
 program
   .option("-f, --file <type>", "Specify the .md file")
-  .option("-a, --action <type>", "Specify the action (template)")
-  .option("-n, --name <type>", "Specify the template name")
+  .option("-a, --action <type>", "Specify the action (add/update)")
   .option("-s, --subj <type>", "Specify the subject")
   .parse(process.argv);
 
