@@ -1,4 +1,4 @@
-POST https://44dad13dwb.execute-api.us-east-1.amazonaws.com/v1/api/reminders/delete?id=WbcwR7ADlQ-nHrG&email=m.v2@g.com HTTP/1.1
+POST https://44dad13dwb.execute-api.us-east-1.amazonaws.com/v1/api/reminders/delete?id=3ns4a8PEH5SYSEs&email=m.v2@g.com HTTP/1.1
 content-type: application/json
 
 {}

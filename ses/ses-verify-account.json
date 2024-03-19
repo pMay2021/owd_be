@@ -1,8 +1,0 @@
-{
-  "Template": {
-    "TemplateName": "verify-account",
-    "SubjectPart": "[OnWhichDate] Please verify your email.",
-    "TextPart": "Action needed: Please Verify Your Email Address.\nDear {{name}},\nWe're excited to have you on board! To get started, there's just one small step left: verifying your email address.\nPlease click the link below to confirm your email address and complete your registration:\n{{magicLink}}\nThis link will expire in 24 hours. If you did not initiate this request, please ignore this email.\nThank you for joining us!\nBest regards,\nThe team at OWD.\nPlease do not reply to this email. It is from an unmonitored inbox.\n",
-    "HtmlPart": "<p><strong>Action needed: Please Verify Your Email Address.</strong></p>\n<p>Dear {{name}},</p>\n<p>We&#39;re excited to have you on board! To get started, there&#39;s just one small step left: verifying your email address.</p>\n<p><strong>Please click the link below to confirm your email address and complete your registration:</strong></p>\n<p>{{magicLink}}</p>\n<p>This link will expire in 24 hours. If you did not initiate this request, please ignore this email.</p>\n<p>Thank you for joining us!</p>\n<p>Best regards,\nThe team at OWD.</p>\n<p><em>Please do not reply to this email. It is from an unmonitored inbox.</em></p>\n"
-  }
-}

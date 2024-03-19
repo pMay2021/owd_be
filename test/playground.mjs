@@ -109,5 +109,6 @@ const dbNoticeSchema = {
   notes: "", //added by customer at the time of creation
 };
 
+owd.log(owd.getOffsetDates("2029-10-13", ["24", "30","60","0", "180"]));
 owd.log(owd.getFriendlyDate("2024-03-30"));
 owd.log(owd.getMagicLink(30));

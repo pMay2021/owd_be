@@ -1,8 +1,0 @@
-{
-  "Template": {
-    "TemplateName": "Notice",
-    "SubjectPart": "[OnWhichDate] A date's due.",
-    "TextPart": "Hi {{name}},\nHeads-up!\nYour item:\n{{documentName}} is due in {{dueInDays}}, on {{dueDate}}.\nNotes: {{notes}}\nAlready actioned it? confirm and delete > {{deleteMagicLink}}\nLogin to see all your reminders > {{magicLink}} (expires in 1 hour)\n\n{{referenceLinks}}\nWe hope that helped you!\nGo to https://onwhichdate.com to make any changes\nThanks,\nfrom your friendly reminders @ owd.\n\n",
-    "HtmlPart": "<p>Hi {{name}},</p>\n<p>Heads-up!</p>\n<p>Your item:</p>\n<p><strong>{{documentName}}</strong> is due in <em>{{dueInDays}}</em>, on <strong>{{dueDate}}.</strong></p>\n<p>Notes: {{notes}}</p>\n<p>Already actioned it? confirm and delete &gt; {{deleteMagicLink}}</p>\n<p>Login to see all your reminders &gt; {{magicLink}} (<em>expires in 1 hour</em>)</p>\n<hr>\n<p>{{referenceLinks}}</p>\n<p>We hope that helped you!</p>\n<p>Go to <a href=\"https://onwhichdate.com\">https://onwhichdate.com</a> to make any changes</p>\n<p>Thanks,</p>\n<p>from your friendly reminders @ owd.</p>\n<hr>\n"
-  }
-}

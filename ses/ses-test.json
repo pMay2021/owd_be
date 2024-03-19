@@ -1,8 +1,0 @@
-{
-  "Template": {
-    "TemplateName": "OWDTest",
-    "SubjectPart": "[OnWhichDate] Test.",
-    "TextPart": "This is a no-variable basic template test email.\nsincerely, \nteam OWD!\nPlease do not reply to this email. It is from an unmonitored inbox.\n",
-    "HtmlPart": "<p>This is a no-variable basic template test email.</p>\n<p>sincerely, </p>\n<p>team OWD!</p>\n<p><em>Please do not reply to this email. It is from an unmonitored inbox.</em></p>\n"
-  }
-}

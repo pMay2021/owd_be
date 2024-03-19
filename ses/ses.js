@@ -5,6 +5,8 @@ const fs = require("fs");
 const path = require("path");
 const { JSDOM } = require("jsdom");
 const { marked } = require("marked");
+const readline = require("readline");
+const { exec } = require("child_process");
 
 program
   .option("-f, --file <type>", "Specify the .md file")
@@ -24,25 +26,67 @@ if (path.extname(options.file) !== ".md") {
 // Read file content
 const fileContent = fs.readFileSync(options.file, "utf8");
 
-if (options.action === "template") {
-  let html = marked(fileContent);
+let html = marked(fileContent);
 
-  // Parse HTML content and extract text
-  const dom = new JSDOM(html);
-  const textContent = dom.window.document.body.textContent || "";
+// Parse HTML content and extract text
+const dom = new JSDOM(html);
+const textContent = dom.window.document.body.textContent || "";
 
-  // Create SES template
-  const sesTemplate = {
-    Template: {
-      TemplateName: options.name || "Your Template Name Here",
-      SubjectPart: options.subj || "Your Subject Here",
-      TextPart: textContent,
-      HtmlPart: html,
-    },
-  };
+// Transform file name to template name
+const templateName = path
+  .basename(options.file, ".md")
+  .replace(/^ses-/, "") // Remove "ses_" prefix
+  .replace(/[-_]+/g, " ") // Replace dashes and underscores with spaces
+  .replace(/(?:^|\s)\S/g, (match) => match.toUpperCase()) // Capitalize each word
+  .replace(/\W/g, ""); // Remove special characters
 
-  // Print the SES template to the terminal
-  console.log(JSON.stringify(sesTemplate, null, 2));
+// Create SES template
+const sesTemplate = {
+  Template: {
+    TemplateName: templateName,
+    SubjectPart: options.subj || "Your Subject Here",
+    TextPart: textContent,
+    HtmlPart: html,
+  },
+};
+
+// Create the output directory if it doesn't exist
+const outputDir = path.join(path.dirname(options.file), "json");
+if (!fs.existsSync(outputDir)) {
+  fs.mkdirSync(outputDir);
+}
+
+// Generate the output file path
+const outputFileName = path.basename(options.file, ".md") + ".json";
+const outputPath = path.join(outputDir, outputFileName);
+
+// Write the SES template to the output file
+fs.writeFileSync(outputPath, JSON.stringify(sesTemplate, null, 2));
+
+const answer = options.action;
+
+if (answer === "add") {
+  // Execute shell command to add template
+  const command = `aws ses create-template --cli-input-json file://${outputPath}`;
+  exec(command, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error executing command: ${error.message}`);
+      return;
+    }
+    console.log(stdout);
+    console.log(`SES template ${templateName} created on AWS and saved to ${outputPath}`);
+  });
+} else if (answer === "update") {
+  // Execute shell command to update template
+  const command = `aws ses update-template --cli-input-json file://${outputPath}`;
+  exec(command, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error executing command: ${error.message}`);
+      return;
+    }
+    console.log(stdout);
+    console.log(`SES template ${templateName} updated on AWS and saved to ${outputPath}`);
+  });
 } else {
-  console.log('Invalid type. Only "template" type is supported.');
+  console.log("Invalid option. Only 'add' or 'update' are supported.");
 }

@@ -4,12 +4,12 @@ content-type: application/json
 {
     "docId": "immigration|us#i94",
     "cid": "LtqCc253FcweDLI",    
-    "expiresOn": "2028-08-01",
+    "expiresOn": "2036-01-22",
     "sendSMS": "true",
     "sendEmail": "true",
     "sendPush": "false",
     "sendWhatsapp": "false",
     "alsoCC": "false",
-    "notes": "for self"
+    "notes": "new notes: 1"
 }
 
