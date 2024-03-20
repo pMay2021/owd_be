@@ -4,6 +4,7 @@
  
  * change log
  * ----------
+ * v 1.0.4 - just prior to authorizer related changed
  * v1.0.3 verify works (register -> verify) + improved log levels
  * v1.0.2 with getParameter and register magic link works
  * v1.0.1 basic, with proper api mgmt
@@ -15,8 +16,8 @@ import * as ch from "/opt/nodejs/node20/channels.mjs";
 const devEmail = "m.venugopal@gmail.com";
 const fromEmail = "notice@onwhichdate.com";
 const today = new Date();
-const magicCodeExpiryMinutes = 15 * 60000;
 const logLevel = process.env.LOG;
+const jwtSecretKey = "/JWT/general-access-token";
 
 const getCountryFromLanguage = (lang) => {
   //TODO later
@@ -39,19 +40,18 @@ const isCustomerVerified = async (email) => {
 };
 
 const sendVerificationEmail = async (email, cid) => {
-  const magicCode = owd.getShortId();
-  // create a magic link and send it to the customer for verification
-  const magicLink = `https://onwhichdate.com/verify?email=${email}&token=${magicCode}`;
+  // create JWT token and send it to the customer for verification
+  const token = await db.encodeJWT(cid, jwtSecretKey);
+  const magicLink = `https://onwhichdate.com/verify?email=${email}&token=${token}`;
   const data = { email: email, name: "Subscriber", magicLink: magicLink };
   owd.log(data, "email template data");
   const item = {
-    magicCode: { S: magicCode }, // generate a magic code to use as a link in magic links
-    magicCodeExpiresAt: { S: new Date(today.getTime() + 60 * 24 * 60000) }, //e
+    jwt: { S: token }, // generate a magic code to use as a link in magic links
   };
-  owd.log(item, "preparing to send email: " + magicLink + " to " + cid, logLevel);
+  owd.log(item, "preparing to send email: " + magicLink + " to " + cid);
   const im = await db.updateItem("db-customer", item, cid);
   const r = await ch.sendEmail(fromEmail, devEmail, "verify-account", data);
-  owd.log(r, "sent email to " + devEmail + " with magic link: " + magicLink, logLevel);
+  owd.log(r, "sent email to " + devEmail + " with magic link: " + magicLink);
 };
 
 export const handler = async (event, context) => {
@@ -62,6 +62,10 @@ export const handler = async (event, context) => {
     owd.log(db.getVersion(), "\nDB version (note: log level = " + logLevel + ")", logLevel);
     owd.log(ch.getVersion(), "\nChannels version", logLevel);
 
+    const cid = event.requestContext.authorizer.lambda.cid;
+
+    return owd.Response(200, event);
+
     // Extract the variables based on the command
     let email, body;
 
@@ -71,7 +75,7 @@ export const handler = async (event, context) => {
       //a new customer just registered
       email = event.queryStringParameters?.email;
       if (!owd.isValidEmail(email) || isDisposable(email)) {
-        return owd.getResponseJSON(400, email + ": please use a valid email and non-disposable domain.");
+        return owd.Response(400, email + ": please use a valid email and non-disposable domain.");
       }
       const { alreadyExists, isVerified, item } = await isCustomerVerified(email);
       let mm = `${alreadyExists} ${isVerified} ${item}`;
@@ -79,12 +83,12 @@ export const handler = async (event, context) => {
       owd.log({ msg: "none" }, mm);
 
       if (alreadyExists && isVerified) {
-        return owd.getResponseJSON(200, "already registered and verified, please login instead.");
+        return owd.Response(200, "already registered and verified, please login instead.");
       }
 
       if (alreadyExists && !isVerified) {
         const r = await sendVerificationEmail(email, item.pk.S);
-        return owd.getResponseJSON(200, "please verify the link sent to your email.");
+        return owd.Response(200, "please verify the link sent to your email.");
       }
 
       const country = getCountryFromLanguage(event.queryStringParameters.cc ?? "us");
@@ -98,41 +102,30 @@ export const handler = async (event, context) => {
     }
 
     if (command === "verify") {
-      email = event.queryStringParameters?.email;
-      // in verification, we check if the token is valid and then update the customer record
-      // and then send a welcome email
-
-      const items = await db.queryItems("db-customer", "email-index", "email = :email", { ":email": { S: email } });
-      if (!items || items.length < 1) {
-        throw new Error("customer not found: " + email);
-      }
-
-      const item = items[0];
-
-      const dbEmail = item.email.S;
-      const magicCode = item.magicCode.S;
+      //let's get the JWT token
       const token = event.queryStringParameters?.token;
-      if (token !== magicCode || dbEmail !== email) {
-        return owd.getResponseJSON(401, `invalid/expired token: please retry registration and click on new email: ${email}`);
+      const email = event.queryStringParameters?.email;
+      const decoded = await db.decodeJWT(token, jwtSecretKey);
+      if (!decoded) {
+        return owd.Response(403, "verification link expired; please re-register to get a new link");
       }
 
-      owd.log(items[0], "about to check codes: ", false);
+      let cid = decoded.data;
 
-      if (Date(item.magicCodeExpiresAt.S) < Date.now()) {
-        await sendVerificationEmail(email, items[0].pk.S);
-        return owd.getResponseJSON(`Magic code expired. We've sent a new email, please check and click.: ${email}`);
-      }
-      //the customer is now verified
+      //let's do a sanity verification of email and cid
+      const customer = await db.getItem("db-customer", cid);
+      const fResp = `${email} and token mismatch, unable to verify.`;
+      if (!customer || customer.email.S != email) return owd.Response(403, fResp);
+
       const updateItem = {
-        verified: { BOOL: true },
-        magicCode: { S: owd.getShortId() }, // generate a new magic code
-        magicCodeExpiresAt: { S: new Date(today.getTime() + magicCodeExpiryMinutes) }, //expires in 15 minutes
+        isVerified: { BOOL: true },
+        jwt: { S: await db.encodeJWT(cid, jwtSecretKey) }, // generate a new token, default expiry 1h
       };
-      const im = await db.updateItem("db-customer", updateItem, item.pk.S);
+      const im = await db.updateItem("db-customer", updateItem, cid);
       owd.log(im, "successfully updated db-customer:", logLevel);
 
       //send them a welcome email and a login link
-      const data = { email: email, name: "Subscriber", magicLink: "https://onwhichdate.com/login?email=" + email + "&token=" + item.magicCode.S };
+      const data = { email: email, name: "Subscriber", magicLink: "https://onwhichdate.com/login?email=" + email + "&token=" + updateItem.jwt.S };
       await ch.sendEmail(fromEmail, devEmail, "Welcome", data);
     }
 
@@ -145,7 +138,7 @@ export const handler = async (event, context) => {
       // let's do some basic verification
       const customer = await db.getItem("db-customer", body.email);
       if (!customer || customer.email.S != email || customer.verified.BOOL === false) {
-        return owd.getResponseJSON(200, "customer verification failed: " + email);
+        return owd.Response(200, "customer verification failed: " + email);
       }
 
       //only the updatable attributes
@@ -154,8 +147,6 @@ export const handler = async (event, context) => {
         cellNumber: { S: cellNumber },
         countryCode: { S: body.countryCode ?? itemDefaults.countryCode.S },
         stateCode: { S: body.stateCode ?? itemDefaults.stateCode.S },
-        magicCode: { S: owd.getShortId() }, // generate a magic code to use as a link in magic links
-        magicCodeExpiresAt: { S: new Date(today.getTime() + magicCodeExpiryMinutes) }, //expires in 15 minutes
         sendEmail: { BOOL: body.sendEmail },
         sendSMS: { BOOL: body.sendSMS },
         sendWhatsapp: { BOOL: body.sendWhatsapp },
@@ -169,11 +160,47 @@ export const handler = async (event, context) => {
       const im = await db.updateItem("db-customer", item, body.cid);
       owd.log(im, "successfully updated db-customer:", logLevel);
     }
-    return owd.getResponseJSON(200, "success");
+    return owd.Response(200, "success");
   } catch (error) {
-    return owd.getResponseJSON(500, error.message);
+    return owd.Response(500, error.message);
   }
 };
+
+function getCustomerDefault(email, country = "us") {
+  const today = new Date();
+
+  //compute trial expiry date
+  const trialEndDate = new Date();
+  trialEndDate.setMonth(trialEndDate.getMonth() + 3, trialEndDate.getDate() + 1);
+  trialEndDate.setHours(0, 1, 0, 0);
+
+  const itemDefaults = {
+    pk: { S: owd.getShortId(15) },
+    email: { S: email },
+    nickName: { S: "subscriber" },
+    isVerified: { BOOL: false }, //this is critical. if 'no', then no further service available until they verify email to 'yes'
+    cellNumber: { S: "+10000000000" },
+    countryCode: { S: country },
+    stateCode: { S: "na" },
+    isCellVerified: { BOOL: false },
+    registrationDate: { S: today.toISOString() },
+    subscriptionEndDate: { S: trialEndDate }, // free trials last 3 months
+    subscriptionStatus: { S: "active" },
+    subscriptionType: { S: "trial" },
+    magicCode: { S: owd.getShortId() }, // generate a magic code to use as a link in magic links
+    magicCodeExpiresAt: { S: new Date(today.getTime() + 15 * 60000) }, //expires in 15 minutes
+    sendEmail: { BOOL: true },
+    sendSMS: { BOOL: false },
+    sendWhatsapp: { BOOL: false },
+    sendPush: { BOOL: false },
+    emailCC: { SS: [""] }, //for future implementation
+    ccOnByDefault: { BOOL: false },
+    sendMarketingEmails: { BOOL: false }, //occasional marketing emails
+    sendTopicUpdates: { BOOL: true }, //occasional topic updates on major doc types
+  };
+  owd.log(itemDefaults, "constructed customer defaults", false);
+  return itemDefaults;
+}
 
 const isDisposable = (email) => {
   let disposables = [
@@ -3840,39 +3867,3 @@ const isDisposable = (email) => {
   const domain = email.split("@")[1]; // Extract domain from email
   return disposables.includes(domain);
 };
-
-function getCustomerDefault(email, country = "us") {
-  const today = new Date();
-
-  //compute trial expiry date
-  const trialEndDate = new Date();
-  trialEndDate.setMonth(trialEndDate.getMonth() + 3, trialEndDate.getDate() + 1);
-  trialEndDate.setHours(0, 1, 0, 0);
-
-  const itemDefaults = {
-    pk: { S: owd.getShortId(15) },
-    email: { S: email },
-    nickName: { S: "subscriber" },
-    isVerified: { BOOL: false }, //this is critical. if 'no', then no further service available until they verify email to 'yes'
-    cellNumber: { S: "+10000000000" },
-    countryCode: { S: country },
-    stateCode: { S: "na" },
-    isCellVerified: { BOOL: false },
-    registrationDate: { S: today.toISOString() },
-    subscriptionEndDate: { S: trialEndDate }, // free trials last 3 months
-    subscriptionStatus: { S: "active" },
-    subscriptionType: { S: "trial" },
-    magicCode: { S: owd.getShortId() }, // generate a magic code to use as a link in magic links
-    magicCodeExpiresAt: { S: new Date(today.getTime() + 15 * 60000) }, //expires in 15 minutes
-    sendEmail: { BOOL: true },
-    sendSMS: { BOOL: false },
-    sendWhatsapp: { BOOL: false },
-    sendPush: { BOOL: false },
-    emailCC: { SS: [""] }, //for future implementation
-    ccOnByDefault: { BOOL: false },
-    sendMarketingEmails: { BOOL: false }, //occasional marketing emails
-    sendTopicUpdates: { BOOL: true }, //occasional topic updates on major doc types
-  };
-  owd.log(itemDefaults, "constructed customer defaults", false);
-  return itemDefaults;
-}
