@@ -4,7 +4,8 @@
  
  * change log
  * ----------
- * v 1.0.4 - just prior to authorizer related changed
+ * v1.0.6 further tweaks with authorizer, now register, update and verify works, tested on REST client.
+ * v1.0.5 incorporating authorizer pre-checks
  * v1.0.3 verify works (register -> verify) + improved log levels
  * v1.0.2 with getParameter and register magic link works
  * v1.0.1 basic, with proper api mgmt
@@ -41,7 +42,7 @@ const isCustomerVerified = async (email) => {
 
 const sendVerificationEmail = async (email, cid) => {
   // create JWT token and send it to the customer for verification
-  const token = await db.encodeJWT(cid, jwtSecretKey);
+  const token = await db.encodeJWT(cid, jwtSecretKey, "24h");
   const magicLink = `https://onwhichdate.com/verify?email=${email}&token=${token}`;
   const data = { email: email, name: "Subscriber", magicLink: magicLink };
   owd.log(data, "email template data");
@@ -62,61 +63,42 @@ export const handler = async (event, context) => {
     owd.log(db.getVersion(), "\nDB version (note: log level = " + logLevel + ")", logLevel);
     owd.log(ch.getVersion(), "\nChannels version", logLevel);
 
-    const cid = event.requestContext.authorizer.lambda.cid;
+    let obj = event.requestContext.authorizer.lambda.item;
+    //return owd.Response(200, obj);
 
-    return owd.Response(200, event);
+    const { email, cid, isVerified } = obj;
 
     // Extract the variables based on the command
-    let email, body;
+    let body;
 
     // the only difference between register and verify is that we change the customer status to
     // verified in the verify command, without which logins will fail
     if (command === "register") {
       //a new customer just registered
-      email = event.queryStringParameters?.email;
-      if (!owd.isValidEmail(email) || isDisposable(email)) {
-        return owd.Response(400, email + ": please use a valid email and non-disposable domain.");
+      if (!owd.isValidEmail(obj.email) || isDisposable(obj.email)) {
+        return owd.Response(400, obj.email + ": please use a valid email and non-disposable domain.");
       }
-      const { alreadyExists, isVerified, item } = await isCustomerVerified(email);
-      let mm = `${alreadyExists} ${isVerified} ${item}`;
 
-      owd.log({ msg: "none" }, mm);
-
-      if (alreadyExists && isVerified) {
+      if (obj.customerExists && obj.isVerified) {
         return owd.Response(200, "already registered and verified, please login instead.");
       }
 
-      if (alreadyExists && !isVerified) {
-        const r = await sendVerificationEmail(email, item.pk.S);
+      if (obj.customerExists && !obj.isVerified) {
+        const r = await sendVerificationEmail(obj.email, obj.cid);
         return owd.Response(200, "please verify the link sent to your email.");
       }
 
       const country = getCountryFromLanguage(event.queryStringParameters.cc ?? "us");
 
       //we'll create a new customer record but set as unverified
-      const itemDefaults = getCustomerDefault(email, country);
+      const itemDefaults = getCustomerDefault(obj.email, country);
       const im = await db.putItem("db-customer", itemDefaults);
       owd.log(im, "inserted item in customer table: cid = " + itemDefaults.pk.S, false);
 
-      await sendVerificationEmail(email, itemDefaults.pk.S);
+      await sendVerificationEmail(obj.email, itemDefaults.pk.S);
     }
 
     if (command === "verify") {
-      //let's get the JWT token
-      const token = event.queryStringParameters?.token;
-      const email = event.queryStringParameters?.email;
-      const decoded = await db.decodeJWT(token, jwtSecretKey);
-      if (!decoded) {
-        return owd.Response(403, "verification link expired; please re-register to get a new link");
-      }
-
-      let cid = decoded.data;
-
-      //let's do a sanity verification of email and cid
-      const customer = await db.getItem("db-customer", cid);
-      const fResp = `${email} and token mismatch, unable to verify.`;
-      if (!customer || customer.email.S != email) return owd.Response(403, fResp);
-
       const updateItem = {
         isVerified: { BOOL: true },
         jwt: { S: await db.encodeJWT(cid, jwtSecretKey) }, // generate a new token, default expiry 1h
@@ -131,15 +113,10 @@ export const handler = async (event, context) => {
 
     if (command === "update") {
       body = JSON.parse(event.body);
-      const itemDefaults = getCustomerDefault(email, getCountryFromLanguage("us"));
 
+      const itemDefaults = getCustomerDefault(email, getCountryFromLanguage("us"));
       const nickName = body.nickName ? body.nickName.trim().substring(0, 10) : itemDefaults.nickName.S;
-      const cellNumber = owd.normalizeCellNumber(body.cellNumber);
-      // let's do some basic verification
-      const customer = await db.getItem("db-customer", body.email);
-      if (!customer || customer.email.S != email || customer.verified.BOOL === false) {
-        return owd.Response(200, "customer verification failed: " + email);
-      }
+      const cellNumber = owd.normalizeCellNumber(body.cellNumber ? body.cellNumber : itemDefaults.cellNumber.S);
 
       //only the updatable attributes
       const item = {
@@ -157,8 +134,9 @@ export const handler = async (event, context) => {
         sendTopicUpdates: { BOOL: body.sendTopicUpdates ?? itemDefaults.sendTopicUpdates.BOOL },
       };
 
-      const im = await db.updateItem("db-customer", item, body.cid);
+      const im = await db.updateItem("db-customer", item, cid);
       owd.log(im, "successfully updated db-customer:", logLevel);
+      return owd.Response(200, im);
     }
     return owd.Response(200, "success");
   } catch (error) {
@@ -187,8 +165,6 @@ function getCustomerDefault(email, country = "us") {
     subscriptionEndDate: { S: trialEndDate }, // free trials last 3 months
     subscriptionStatus: { S: "active" },
     subscriptionType: { S: "trial" },
-    magicCode: { S: owd.getShortId() }, // generate a magic code to use as a link in magic links
-    magicCodeExpiresAt: { S: new Date(today.getTime() + 15 * 60000) }, //expires in 15 minutes
     sendEmail: { BOOL: true },
     sendSMS: { BOOL: false },
     sendWhatsapp: { BOOL: false },
