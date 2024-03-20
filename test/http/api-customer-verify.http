@@ -1,5 +1,5 @@
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoia05zZFdBN2o1NmtmMkhEIiwiaWF0IjoxNzEwODk5NzU1LCJleHAiOjE3MTA5MDMzNTV9.cCE8trsaDgpbEkAtzFtUvRhxCR_CgYFUBQcCd_gupnI
-@email = m.v4@gmail.com
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiS1d0cjdPc1pJTTdFWEFVIiwiaWF0IjoxNzEwOTA1MzY0LCJleHAiOjE3MTA5OTE3NjR9.rrbZQIfYMV8LeDW4OCw8uwgGNJ8iILSaXVui7Gw4AGU
+@email = m.v5@gmail.com
 POST https://77uxp6az23.execute-api.us-east-1.amazonaws.com/v1/api/customer/verify
     ?email={{email}} &token={{token}} HTTP/1.1
 content-type: application/json

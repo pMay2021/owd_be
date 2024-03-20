@@ -1,6 +1,6 @@
 
 POST https://77uxp6az23.execute-api.us-east-1.amazonaws.com/v1/api/customer/register
-    ?email=m.v4@gmail.com
+    ?email=m.v5@gmail.com
     &token=abcde HTTP/1.1
 content-type: application/json
 
