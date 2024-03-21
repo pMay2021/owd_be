@@ -1,0 +1,51 @@
+// @token (v6@) = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoia2tBR2lkdFl4SUdtM2VMIiwiaWF0IjoxNzEwOTU2NTUyLCJleHAiOjE3MTEwNDI5NTJ9.-nHVhtF33zQKfuRhu0cY4Df-fDhVtiJsPPbgFl8OSAQ
+// @token (v7@) = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiOG9MSE9jQmp5TlhqU0hKIiwiaWF0IjoxNzEwOTU3MDY5LCJleHAiOjE3MTA5NjA2Njl9.R0MnPb0VoDGQoOQiywgNmJPFqWJiAKCrZta_APhoZhE
+// @email = m.v6@gmail.com
+
+@ep =44dad13dwb.execute-api.us-east-1.amazonaws.com/v1/api
+
+
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiM2JITWVMSWxFWFBpa0tDIiwiaWF0IjoxNzEwOTU5NjU1LCJleHAiOjE3MTEwNDYwNTV9.au0zL_MSTcHMf35CqGUVIkjG2b5rigo9CLFmim14Slw
+@email = m.v9@gmail.com
+
+// add a reminder
+POST https://{{ep}}/reminders/add?email={{email}}&token={{token}} HTTP/1.1
+content-type: application/json
+
+{
+    "docId": "immigration|us#i94",
+    "expiresOn": "2034-01-22",
+    "sendSMS": "true",
+    "sendEmail": "true",
+    "sendPush": "false",
+    "sendWhatsapp": "false",
+    "alsoCC": "false",
+    "notes": "new notes: 1"
+}
+
+
+###
+
+
+// delete a specific notice by id
+POST https://{{ep}}/reminders/delete?email={{email}}&token={{token}}&id={{id}} HTTP/1.1
+content-type: application/json
+
+{
+}
+
+
+
+###
+
+// update a specific notice by id
+POST https://{{ep}}/reminders/update?email={{email}}&token={{token}} HTTP/1.1
+content-type: application/json
+
+
+{
+    "id": "eBhVBP6v27AIH4k",
+    "date": "2026-09-25",
+    "alsoCC": "true",
+    "notes": "an update :3"
+}

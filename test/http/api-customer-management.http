@@ -5,7 +5,7 @@
 @ep = 77uxp6az23.execute-api.us-east-1.amazonaws.com/v1/api
 
 POST https://{{ep}}/customer/register
-    ?email=m.v8@gmail.com
+    ?email=m.v9@gmail.com
     &token=abcde HTTP/1.1
 content-type: application/json
 
@@ -19,7 +19,7 @@ content-type: application/json
 @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiM2JITWVMSWxFWFBpa0tDIiwiaWF0IjoxNzEwOTU5NjU1LCJleHAiOjE3MTEwNDYwNTV9.au0zL_MSTcHMf35CqGUVIkjG2b5rigo9CLFmim14Slw
 @email = m.v8@gmail.com
 
-POST https://77uxp6az23.execute-api.us-east-1.amazonaws.com/v1/api/customer/verify?email={{email}}&token={{token}} HTTP/1.1
+POST https://{{ep}}/customer/verify?email={{email}}&token={{token}} HTTP/1.1
 content-type: application/json
 
 {
@@ -28,11 +28,22 @@ content-type: application/json
 
 ###
 
+
+POST https://{{ep}}/customer/loginrequest?email={{email}}&token={{token}} HTTP/1.1
+content-type: application/json
+
+{
+}
+
+
+
+###
+
 POST https://{{ep}}/customer/update?token={{token}}  HTTP/1.1
 content-type: application/json
 
 {
-    "nickName": "Slartibarfast",
+    "nickName": "Slartibafact2",
     "cellNumber": "+1732-599-5930",
     "countryCode": "us",
     "stateCode": "wa",
@@ -43,5 +54,5 @@ content-type: application/json
     "sendTopicUpdates": "false",
     "sendPush": "false",
     "ccOnByDefault": "true",
-    "emailCC": ["ghiga@shunga.com", "shuga@binga.com"]
+    "emailCC": ["ghiga@shunga.com", "kiga@binga.com"]
 }

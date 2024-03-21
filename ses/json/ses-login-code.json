@@ -1,0 +1,8 @@
+{
+  "Template": {
+    "TemplateName": "LoginCode",
+    "SubjectPart": "[OnWhichDate] Login link enclosed\n",
+    "TextPart": "Click to login\nDear {{name}},\nPlease click the link below to login to your account. The link expires in 15 minutes.\n{{magicLink}}\nIf you did not initiate this request, please ignore this email.\nBest regards,\nThe team at OWD.\nPlease do not reply to this email. It is from an unmonitored inbox.\n",
+    "HtmlPart": "<p><strong>Click to login</strong></p>\n<p>Dear {{name}},</p>\n<p><strong>Please click the link below to login to your account. The link expires in 15 minutes.</strong></p>\n<p>{{magicLink}}</p>\n<p>If you did not initiate this request, please ignore this email.</p>\n<p>Best regards,\nThe team at OWD.</p>\n<p><em>Please do not reply to this email. It is from an unmonitored inbox.</em></p>\n"
+  }
+}
