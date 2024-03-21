@@ -6,27 +6,27 @@
 
 
 @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiM2JITWVMSWxFWFBpa0tDIiwiaWF0IjoxNzEwOTU5NjU1LCJleHAiOjE3MTEwNDYwNTV9.au0zL_MSTcHMf35CqGUVIkjG2b5rigo9CLFmim14Slw
-@email = m.v9@gmail.com
+@email = m.v8@gmail.com
 
 // add a reminder
 POST https://{{ep}}/reminders/add?email={{email}}&token={{token}} HTTP/1.1
 content-type: application/json
 
 {
-    "docId": "immigration|us#i94",
-    "expiresOn": "2034-01-22",
-    "sendSMS": "true",
+    "docId": "travel|us#passport",
+    "expiresOn": "2029-09-24",
+    "sendSMS": "false",
     "sendEmail": "true",
     "sendPush": "false",
     "sendWhatsapp": "false",
     "alsoCC": "false",
-    "notes": "new notes: 1"
+    "notes": "yumm is samosa"
 }
 
 
 ###
 
-
+@id = rOPXee1FeRKkGOK
 // delete a specific notice by id
 POST https://{{ep}}/reminders/delete?email={{email}}&token={{token}}&id={{id}} HTTP/1.1
 content-type: application/json
@@ -39,13 +39,18 @@ content-type: application/json
 ###
 
 // update a specific notice by id
-POST https://{{ep}}/reminders/update?email={{email}}&token={{token}} HTTP/1.1
+POST https://{{ep}}/reminders/update?email={{email}}&token={{token}}&id={{id}} HTTP/1.1
 content-type: application/json
 
 
 {
-    "id": "eBhVBP6v27AIH4k",
-    "date": "2026-09-25",
-    "alsoCC": "true",
-    "notes": "an update :3"
+    "date": "2033-12-20",
+    "alsoCC": "false",
+    "notes": "an update :4"
 }
+
+###
+GET https://{{ep}}/reminders/get?email={{email}}&token={{token}}&n=3 HTTP/1.1
+content-type: application/json
+
+{}
