@@ -1,97 +1,97 @@
 /*
- * this code adds notices based on the reminder offsets of a document
+ * this code is scheduled via EventBridge and retrieves notices to be sent
  *
  * change log
  * ----------
- * v1.0.3 - logging improvements and minor fixes, notice additions work
- * v1.0.2 - layer updated, code updated for revised schema
- * v1.0.1 basic version works through test and POST
+ * v1.0.8 now works! still hardcoded but fundamentals work
+ * v1.0.7 testing with new layer and db methods
+ * v1.0.6 updated to new layer constructs, schemas, logging
+ * v1.0.5 handling edge cases, today
+ * v1.0.4 updated schema and layers, sending email with s3 addendum works (but code is hardcoded to a date for testing)
+ * v1.0.3 basic version works on email
  */
 
 import * as owd from "/opt/nodejs/node20/owd.mjs";
 import * as db from "/opt/nodejs/node20/owddb.mjs";
-const goModify = process.env.DB_MODIFY === "TRUE" ? true : false;
+import * as ch from "/opt/nodejs/node20/channels.mjs";
 
-const logLevel = process.env.LOG_LEVEL || "DEBUG"; //set to true to enable actual db operations
+const goModify = process.env.DB_MODIFY === "TRUE";
+const logLevel = process.env.LOG_LEVEL || "DEBUG";
+const devEmail = "m.venugopal@gmail.com";
+const jwtSecretKey = "/JWT/general-access-token";
+
+const sendNotice = async (notice) => {
+  owd.log(notice, "Sending notice for:");
+
+  const { S: documentId } = notice.documentId;
+  const docDb = await db.getItem("db-document", ...documentId.split("|"));
+
+  const customerDb = await db.getItem("db-customer", notice.cid.S);
+
+  const inDays = owd.getFriendlyDateDifference(new Date(), notice.originalExpiryOn.S);
+
+  const fileKey = `db/${docDb.pk.S}#${docDb.sk.S}.md`;
+  //owd.log(fileKey, `The S3 file key: and refDoc == ${docDb.refDoc.BOOL}`);
+
+  const refContent = docDb.refDoc.BOOL ? await db.getS3Text("onwhichdate", fileKey) : "";
+
+  const token = await db.encodeJWT(customerDb.pk.S, jwtSecretKey, "1");
+
+  const d = {
+    name: customerDb.nickName.S,
+    notes: notice.notes.S,
+    documentName: docDb.documentName.S,
+    dueInDays: inDays.dueInSentence,
+    dueDate: owd.getFriendlyDate(notice.originalExpiryOn.S),
+    editMagicLink: `https://onwhichdate.com/reminders/edit?id=${notice.parentKey.S}&email=${customerDb.email.S}&token=${token}`,
+    referenceNotes: owd.getHtmlFromMarkdown(refContent),
+  };
+
+  owd.log(d, "Preparing to send notice");
+
+  if (goModify && !notice.isAlreadySent.BOOL) {
+    console.log("Sending email");
+    const r = inDays.isToday
+      ? await ch.sendEmail("notice@onwhichdate.com", devEmail, "NoticeForToday", d)
+      : await ch.sendEmail("notice@onwhichdate.com", devEmail, "ReminderNotice", d);
+    owd.log(r, "Email response:");
+  }
+};
 
 export const handler = async (event, context) => {
-  owd.info(owd.getVersion(), "\nLib version (note: logLevel = " + logLevel + ")");
-  const body = JSON.parse(event.body);
-  owd.info(body, "The incoming body");
-  const { cid, docId, expiresOn } = body;
-
   try {
-    // Validate input parameters
-    if (!cid || !expiresOn) {
-      throw new Error("Missing required parameters.");
-    }
+    owd.log(owd.getVersion(), `Lib version (note: goModify = ${goModify})`);
+    owd.log(db.getVersion(), `DB version`);
+    owd.log(event, `\n${context.functionName}: received event`);
 
-    const customerDb = await db.getItem("db-customer", cid);
+    const date = new Date();
+    const hour = date.getHours().toString().padStart(2, "0");
+    let pk = date.toISOString().split("T")[0] + "#" + hour + "#notice";
+    pk = "2028-10-08#23#notice"; //for testing
+    pk = "2029-08-25#03#notice";
 
-    if (!customerDb) {
-      throw new Error("Customer not found.");
-    }
-    owd.log(customerDb, "Retrieved customer details:");
+    const notices = await db.getNoticesBySlot(pk);
 
-    let [pk, sk] = docId.split("|");
-    owd.log({ pk: pk, sk: sk }, "pk and sk");
-    const docDb = await db.getItem("db-document", pk, sk);
-    if (!docDb) {
-      return owd.getResponseJSON(404, "Document not found for " + pk + " " + sk);
-    }
-    owd.log(docDb, "Retrieved document details:");
+    for (const notice of notices) {
+      owd.log(notice, "Preparing to send notice");
 
-    const offsetArray = docDb.reminderOffsetDays.L.map((x) => x.N);
-    console.log("entering create and insert");
-    const newDates = await createAndInsertNotices(offsetArray, docDb);
-    const retJson = { notices: newDates };
-    owd.log(newDates, "constructed new dates");
-
-    return owd.getResponseJSON(200, JSON.stringify(retJson));
-  } catch (error) {
-    owd.error(error.message);
-    return owd.getResponseJSON(500, JSON.stringify(event));
-  }
-
-  async function createAndInsertNotices(offsetArray, docDb) {
-    const newDates = owd.getOffsetDates(expiresOn, offsetArray);
-    const ret = [];
-
-    for (const date of newDates) {
-      const hour = new Date().getHours().toString().padStart(2, "0");
-      const pk = date.date + "#" + hour;
-      const sk = owd.getShortId();
-      const noticeItem = {
-        pk: { S: pk },
-        sk: { S: sk }, //the shortId ensures uniqueness
-        cid: { S: cid },
-        isAlreadySent: { BOOL: false },
-        addedOn: { S: new Date().toISOString() },
-        isParent: { BOOL: date.offsetNumber === 0 },
-        originalExpiryOn: { S: newDates[0].date },
-        documentId: { S: docDb.pk.S + "|" + docDb.sk.S },
-        sendSMS: { BOOL: body.sendSMS },
-        sendEmail: { BOOL: body.sendEmail },
-        sendPush: { BOOL: body.sendPush },
-        sendWhatsapp: { BOOL: body.sendWhatsapp },
-        alsoCC: { BOOL: body.alsoCC },
-        daysRemaining: { N: date.dueInDays },
-        notes: { S: body.notes },
-      };
-
-      owd.log(noticeItem, "Constructed notice entry for:");
-      if (goModify) {
-        const resp = await db.putItem("db-notice", noticeItem);
-        owd.info(resp, "Added notice to db:");
-      } else {
-        owd.info("Skipping actual db operation", "");
+      if (notice.isAlreadySent.BOOL) {
+        owd.log(notice.pk.S, "already sent, not resending comms again.");
+        continue;
       }
 
-      ret.push({
-        id: pk + "|" + sk,
-        date: date,
-      });
+      await sendNotice(notice);
+
+      //update the alreadySent
+      const item = {
+        isAlreadySent: { BOOL: true },
+      };
+
+      await db.updateItem("db-notices", item, notice.pk.S);
     }
-    return ret;
+    return owd.Response(200, "success");
+  } catch (error) {
+    console.error(error.message);
+    owd.Response(500, { message: `Failed to process notices: ${error.message}`, event: JSON.stringify(event) });
   }
 };

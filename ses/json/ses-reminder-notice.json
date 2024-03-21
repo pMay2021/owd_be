@@ -1,0 +1,8 @@
+{
+  "Template": {
+    "TemplateName": "ReminderNotice",
+    "SubjectPart": "[OnWhichDate] A reminder for an upcoming event/expiry",
+    "TextPart": "Hi {{name}},\nA gentle reminder on an upcoming expiry/deadline\nYour item:\n{{documentName}} is due in {{dueInDays}}, on {{dueDate}}.\nNotes: {{notes}}\nWant to mark it as complete or make changes? > click here \n(note: link expires in 1 hour.)\nBest regards,\nThe team at OWD.\n\n{{referenceNotes}}\nPlease do not reply to this email. It is from an unmonitored inbox.\n",
+    "HtmlPart": "<p>Hi {{name}},</p>\n<p><strong>A gentle reminder on an upcoming expiry/deadline</strong></p>\n<p>Your item:</p>\n<p><strong>{{documentName}}</strong> is due in <em>{{dueInDays}}</em>, on <strong>{{dueDate}}.</strong></p>\n<p>Notes: {{notes}}</p>\n<p>Want to mark it as complete or make changes? &gt; <a href=\"{{editMagicLink}}\">click here</a> </p>\n<p><em>(note: link expires in 1 hour.)</em></p>\n<p>Best regards,</p>\n<p>The team at OWD.</p>\n<hr>\n<p>{{referenceNotes}}</p>\n<p><em>Please do not reply to this email. It is from an unmonitored inbox.</em></p>\n"
+  }
+}

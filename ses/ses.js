@@ -26,6 +26,7 @@ if (path.extname(options.file) !== ".md") {
 const fileContent = fs.readFileSync(options.file, "utf8");
 
 let html = marked(fileContent);
+html = html.replace(/%7B%7B/g, '{{').replace(/%7D%7D/g, '}}');
 
 // Parse HTML content and extract text
 const dom = new JSDOM(html);
