@@ -4,6 +4,8 @@
  
  * change log
  * ----------
+ * v1.0.8 login request bug fixes
+ * v1.0.7 login + some cleanups
  * v1.0.6 further tweaks with authorizer, now register, update and verify works, tested on REST client.
  * v1.0.5 incorporating authorizer pre-checks
  * v1.0.3 verify works (register -> verify) + improved log levels
@@ -25,6 +27,19 @@ const getCountryFromLanguage = (lang) => {
   return "us";
 };
 
+
+const refreshToken = async (forCid, withExpiry = "15m") => {
+  const token = await db.encodeJWT(forCid, jwtSecretKey, withExpiry);
+  const item = {
+    jwt: { S: token }, 
+  };
+  
+  if (forCid != "none") await db.updateItem("db-customer", item, forCid);
+  
+  return token;
+}
+
+
 /**
  * Checks if a customer is already registered based on the provided email.
  * Throws an error if the customer is already registered.
@@ -32,28 +47,17 @@ const getCountryFromLanguage = (lang) => {
  * @param {string} email - The email of the customer to check.
  * @throws {Error} - Throws an error if the customer is already registered.
  */
-const isCustomerVerified = async (email) => {
-  const items = await db.queryItems("db-customer", "email-index", "email = :email", { ":email": { S: email } });
-  owd.log(items, "logging items from isCustomerVerified");
-  const alreadyExists = items && items.length > 0;
-  const isVerified = alreadyExists && items[0]?.isVerified.BOOL;
-  return { alreadyExists, isVerified, item: items[0] };
+
+const sendAuthEmail = async (command, email, cid, withExpiry, templateName) => {
+  // create JWT token and send it to the customer for verification
+  const token = await refreshToken(cid, withExpiry)
+  const magicLink = `https://onwhichdate.com/${command}?email=${email}&token=${token}`;
+  const data = { email: email, name: "Subscriber", magicLink: magicLink };
+  const r = await ch.sendEmail(fromEmail, devEmail, templateName, data);
+  owd.log(r, "sent email to " + devEmail + " with magic link: " + magicLink);
+  return token;
 };
 
-const sendVerificationEmail = async (email, cid) => {
-  // create JWT token and send it to the customer for verification
-  const token = await db.encodeJWT(cid, jwtSecretKey, "24h");
-  const magicLink = `https://onwhichdate.com/verify?email=${email}&token=${token}`;
-  const data = { email: email, name: "Subscriber", magicLink: magicLink };
-  owd.log(data, "email template data");
-  const item = {
-    jwt: { S: token }, // generate a magic code to use as a link in magic links
-  };
-  owd.log(item, "preparing to send email: " + magicLink + " to " + cid);
-  const im = await db.updateItem("db-customer", item, cid);
-  const r = await ch.sendEmail(fromEmail, devEmail, "verify-account", data);
-  owd.log(r, "sent email to " + devEmail + " with magic link: " + magicLink);
-};
 
 export const handler = async (event, context) => {
   try {
@@ -73,19 +77,43 @@ export const handler = async (event, context) => {
 
     // the only difference between register and verify is that we change the customer status to
     // verified in the verify command, without which logins will fail
-    if (command === "register") {
-      //a new customer just registered
-      if (!owd.isValidEmail(obj.email) || isDisposable(obj.email)) {
-        return owd.Response(400, obj.email + ": please use a valid email and non-disposable domain.");
-      }
-
+    
+    if(command === "loginrequest") {
+      owd.log(obj, "loginrequest");
       if (obj.customerExists && obj.isVerified) {
-        return owd.Response(200, "already registered and verified, please login instead.");
+        let token = await sendAuthEmail(command, obj.email, obj.cid, "48h", "LoginCode");
+        return owd.Response(200, {message: "code sent to your email, please click to login.", "token": token});
+      } else {
+        return owd.Response(401, {message: "either not registered or verified."});
+      }
+    }
+    
+    if(command === "login") {
+      
+      if (obj.customerExists && obj.isVerified) {
+        const token = await refreshToken(cid, "48h");
+        return owd.Response(200, {message: "successful", "token": token} );
+      } else {
+        return owd.Response(401, {message: "either not registered or verified."});
+      }
+    }
+    
+    if (command === "register") {
+
+      //a new customer just registered and passed through basic authorization
+      
+      if (!owd.isValidEmail(obj.email) || isDisposable(obj.email)) {
+        return owd.Response(400, {message: "please use a valid email and non-disposable domain.", "email": email});
       }
 
-      if (obj.customerExists && !obj.isVerified) {
-        const r = await sendVerificationEmail(obj.email, obj.cid);
-        return owd.Response(200, "please verify the link sent to your email.");
+      const cust = await db.getCustomerByEmail(obj.email);
+      if (cust && cust.isVerified.BOOL) {
+        return owd.Response(200, {message: "already registered and verified, please login instead."});
+      }
+
+      if (cust && !cust.isVerified.BOOL) {
+        const r = await sendAuthEmail(command, cust.email.S, cust.pk.S, "24h", "VerifyAccount");
+        return owd.Response(200, {message: "please verify the link sent to your email."});
       }
 
       const country = getCountryFromLanguage(event.queryStringParameters.cc ?? "us");
@@ -95,20 +123,19 @@ export const handler = async (event, context) => {
       const im = await db.putItem("db-customer", itemDefaults);
       owd.log(im, "inserted item in customer table: cid = " + itemDefaults.pk.S, false);
 
-      await sendVerificationEmail(obj.email, itemDefaults.pk.S);
+      await sendAuthEmail(command, obj.email, itemDefaults.pk.S,  "24h", "VerifyAccount" );
+      return owd.Response(200, "registration succeeded");
     }
 
     if (command === "verify") {
-      const updateItem = {
-        isVerified: { BOOL: true },
-        jwt: { S: await db.encodeJWT(cid, jwtSecretKey) }, // generate a new token, default expiry 1h
-      };
-      const im = await db.updateItem("db-customer", updateItem, cid);
-      owd.log(im, "successfully updated db-customer:", logLevel);
-
+      //TODO finally make expiry 60m
+      const jwt = await refreshToken(cid, "24h");
+      const im = await db.updateItem("db-customer", { isVerified: { BOOL: true }}, cid);
+      
       //send them a welcome email and a login link
-      const data = { email: email, name: "Subscriber", magicLink: "https://onwhichdate.com/login?email=" + email + "&token=" + updateItem.jwt.S };
+      const data = { email: email, name: "Subscriber", magicLink: "https://onwhichdate.com/login?email=" + email + "&token=" + jwt };
       await ch.sendEmail(fromEmail, devEmail, "Welcome", data);
+      return owd.Response(200, {message: "verification email sent"});
     }
 
     if (command === "update") {
@@ -138,7 +165,7 @@ export const handler = async (event, context) => {
       owd.log(im, "successfully updated db-customer:", logLevel);
       return owd.Response(200, im);
     }
-    return owd.Response(200, "success");
+    return owd.Response(401, "unknown command");
   } catch (error) {
     return owd.Response(500, error.message);
   }
