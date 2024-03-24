@@ -5,7 +5,7 @@
 @ep =44dad13dwb.execute-api.us-east-1.amazonaws.com/v1/api
 
 
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiM2JITWVMSWxFWFBpa0tDIiwiaWF0IjoxNzEwOTU5NjU1LCJleHAiOjE3MTEwNDYwNTV9.au0zL_MSTcHMf35CqGUVIkjG2b5rigo9CLFmim14Slw
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiM2JITWVMSWxFWFBpa0tDIiwiaWF0IjoxNzExMjQ2MTQ2LCJleHAiOjE3MTE0MTg5NDZ9.rcPjGR8B6ktOMgkXoS3cnrm3bO6t_R9KGk4k1ghuP9h
 @email = m.v8@gmail.com
 
 // add a reminder
@@ -14,6 +14,22 @@ content-type: application/json
 
 {
     "docId": "travel|us#passport",
+    "expiresOn": "2029-03-22",
+    "sendSMS": "false",
+    "sendEmail": "true",
+    "sendPush": "false",
+    "sendWhatsapp": "false",
+    "alsoCC": "false",
+    "notes": "for sara"
+}
+
+###
+
+https://44dad13dwb.execute-api.us-east-1.amazonaws.com/v1/api/reminders/add?email=ginga@gunga.com&token=abcde HTTP/1.1
+content-type: application/json
+
+{
+    "docId": "passport",
     "expiresOn": "2029-03-22",
     "sendSMS": "false",
     "sendEmail": "true",
