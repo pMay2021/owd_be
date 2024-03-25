@@ -39,6 +39,8 @@ format: https://api-id.execute-api.region.amazonaws.com/stage
 4. Zip it as `zip -r owdlib.zip . `
 5. After deploying, use the import as `import * as owd from '/opt/nodejs/node20/owd.mjs'`
 
+To add a new package, go to `node20` and to npm i after updating the `package.json`
+
 
 ~~~
 ├── nodejs
@@ -55,4 +57,4 @@ format: https://api-id.execute-api.region.amazonaws.com/stage
 ### Common mistakes
 
 1. making dynamoDB record comparisons without type strings: e.g., `if (email === record.email) instead of if (email === record.email.S)`
-3. sending empty objects in insert or update
+2. sending empty objects in insert or update
