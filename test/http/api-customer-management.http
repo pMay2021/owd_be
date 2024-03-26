@@ -2,11 +2,46 @@
 // @token (v7@) = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiOG9MSE9jQmp5TlhqU0hKIiwiaWF0IjoxNzEwOTU3MDY5LCJleHAiOjE3MTA5NjA2Njl9.R0MnPb0VoDGQoOQiywgNmJPFqWJiAKCrZta_APhoZhE
 // @email = m.v6@gmail.com
 
+// updated v2.0 customer management API, uses HTTP methods rather than
+// internal commands
+// API source map: /v1/customers/
+// +---------+-------+-----+-------+-------------------+
+// | Op      | Email | Web | HTTP  | Notes             |
+// +---------+-------+-----+-------+-------------------+
+// | REG     |       |  x  | POST  |                   |
+// +---------+-------+-----+-------+-------------------+
+// | VERIFY  | x     |     | GET   |                   |
+// +---------+-------+-----+-------+ both share same   +
+// | LOGIN   | x     |     | GET   | req               |
+// +---------+-------+-----+-------+-------------------+
+// | LOGOUT  |       |  x  | GET   |                   |
+// +---------+-------+-------+-------------------------+
+// | ISSUE   |       |  x  | GET   | issue login code  |
+// +---------+-------+-------+-------------------------+
+// | UPDATE  |       |  x  | PATCH |                   |
+// +---------+-------+-----+-------+-------------------+
+// | DELETE  | x     |     | DELETE|                   |
+// +---------+---------+-----+-------+-------------------+
+
+
+// sample values
 @ep = 77uxp6az23.execute-api.us-east-1.amazonaws.com/v1/api
+@email = api.revised.1@gmail.com
+@key = ABCDEFG
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiT1dELTIwMjQwMzI2LTVBMFZBOWkxQXdzV2JGbiIsImlhdCI6MTcxMTQyNzY2MiwiZXhwIjoxNzExNjAwNDYyfQ.lX4gaiLnff1yVIbQvSx3LmpePmkFcIJX-1m2eGeXbho
 
-POST https://{{ep}}/customer/register
-    ?email=ginga@gunga.com
-    &token=abcde HTTP/1.1
+
+
+// REGISTER a new customer. The email address must be unique. 
+// POST because we are creating a new customer.
+// key: required (must be a valid API key shared only between CF and AWS, not seen by customer)
+// body: none
+// response:
+// - 201 OK if the email is valid and customer created
+// - 406 Not acceptable if the email is not valid or already exists
+// - 412 Precondition failed; conflict if the email is not valid or already exists
+
+POST https://{{ep}}/customer?email={{email}}&key={{key}} HTTP/1.1
 content-type: application/json
 
 {
@@ -15,11 +50,34 @@ content-type: application/json
 
 ###
 
+// VERIFY (or LOGIN) a new customer. The email address must have been registered.
+// GET as this is initiated in an email client/by the customer.
+// token: required (must be a valid token issued by the server to identify source)
+// body: none
+// if customer verified, login to dashboard
+// if !verified, verify, send welcome email, and login to dashboard
+// response:
+// - 302 Found, FE redirect to dashboard
+// - 401 Unauthorized if the email is not valid or customer not verified
 
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiM2JITWVMSWxFWFBpa0tDIiwiaWF0IjoxNzEwOTU5NjU1LCJleHAiOjE3MTEwNDYwNTV9.au0zL_MSTcHMf35CqGUVIkjG2b5rigo9CLFmim14Slw
-@email = m.v8@gmail.com
+GET https://{{ep}}/customer?action=verify&email={{email}}&token={{token}} HTTP/1.1
+content-type: application/json
 
-POST https://{{ep}}/customer/verify?email={{email}}&token={{token}} HTTP/1.1
+{
+}
+
+###
+
+
+// SEND_TOKEN for a customer to login. The email address must have been registered and verified.
+// GET as this is a code request initiated from the web or via SMS text
+// token: required (must be a valid token issued by the server as a means to identify valid source)
+// body: none
+// response: 
+// - 200 OK if the email is valid and link sent to email
+// - 404 Not Found if the email is not valid or customer not verified (tell them to register)
+
+GET https://{{ep}}/customer?action=issue&email={{email}} HTTP/1.1
 content-type: application/json
 
 {
@@ -28,18 +86,41 @@ content-type: application/json
 
 ###
 
-
-POST https://{{ep}}/customer/loginrequest?email={{email}}&token={{token}} HTTP/1.1
+// LOGIN a customer. See VERIFY for other instructions and responses.
+GET https://{{ep}}/customer?action=login&email={{email}}&token={{token}} HTTP/1.1
 content-type: application/json
 
 {
 }
 
 
+###
+
+// LOGOUT a customer
+// token: required 
+// key: required (must be a valid API key shared only between CF and AWS, not seen by customer)
+// body: none
+// response: 
+// - 302 redirect to home page
+
+GET https://{{ep}}/customer?action=logout&email={{email}}&token={{token}}&key={{key}} HTTP/1.1
+content-type: application/json
+
+{
+}
+
 
 ###
 
-POST https://{{ep}}/customer/update?token={{token}}  HTTP/1.1
+// UPDATE customer info. They are logged in and can update their info.
+// token: required (must be a valid token issued by the server as a means to identify valid source)
+// key: required (must be a valid API key shared only between CF and AWS, not seen by customer)
+// body: none
+// response: 
+// - 200 OK  
+// - 500 Internal Server Error if something went wrong
+
+PATCH https://{{ep}}/customer?email={{email}}&token={{token}}&key={{key}}  HTTP/1.1
 content-type: application/json
 
 {

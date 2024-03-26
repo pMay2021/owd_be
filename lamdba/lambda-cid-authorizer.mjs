@@ -2,83 +2,99 @@ import * as owd from "/opt/nodejs/node20/owd.mjs";
 import * as db from "/opt/nodejs/node20/owddb.mjs";
 
 // This is a Lambda function that is used to authorize the customer ID (cid) and email (optional)
+// v0.3 - heavy revision to support new customer API
+// v0.21 - revision of customer API updates
 // v0.1 - 2021-09-01 - Initial version
 
 const jwtSecretKey = "/JWT/general-access-token";
 
-export const handler = async (event, context) => {
-  const command = event.pathParameters?.proxy;
-  const email = event.queryStringParameters?.email?.trim()?.toLowerCase();
-  const token = event.queryStringParameters?.token;
+export const handler = async (event, context, callback) => {
+  try {
+    let cid, customerRecord;
+    const method = event.requestContext.http.method;
+    const qsp = event.queryStringParameters;
 
-  let cid = "none";
-  let item;
+    const allowedGetCommands = ["issue", "register", "verify", "login", "logout"];
 
-  // Only the registration command gets a straight pass and it's the first step
-  if (command === "register") {
-    return { isAuthorized: true, context: { cid: cid, item: {} } };
-  }
+    //email is mandatory for all requests to customer API's
+    let email = event.queryStringParameters?.email;
 
-  // Validate the token for all commands except loginrequest
-  if (command !== "loginrequest") {
-    if (!token) {
-      throw new Error("Token is missing");
-    }
-
-    const decoded = await db.decodeJWT(token, jwtSecretKey);
-    owd.log(decoded, "decoded");
-
-    if (decoded.hasError) {
-      throw new Error("Authorization error: " + decoded.errMessage);
-    }
-
-    cid = decoded.data.data;
-
-    // Extract the customer
-    item = await db.getItem("db-customer", cid);
-    if (!item) {
-      throw new Error("Customer not found, something went wrong");
-    }
-  }
-
-  // If it's a login code request, we need the email but don't care about the token
-  if (command === "loginrequest") {
     if (!email) {
       throw new Error("Email is missing");
     }
 
-    item = await db.getCustomerByEmail(email);
-    if (!item) {
-      throw new Error("Email is invalid/customer not found");
+    email = email.trim()?.toLowerCase();
+
+    if (owd.isValidEmail(email) === false) {
+      throw new Error("Invalid email format");
     }
-    cid = item.pk.S;
+
+    // email is source for identification for POST (registration) or GET (issue)
+    // no token is expected for these two commands
+    // everything else going forward needs a token
+    if (method === "POST") {
+      return resp({ email: email, isVerified: true, cid: " " });
+    }
+
+    if (method === "GET" && qsp.action === "issue") {
+      customerRecord = await db.getCustomerByEmail(email);
+      if (!customerRecord || customerRecord.isVerified.BOOL === false) {
+        throw new Error("Customer does not exist or is unverified.");
+      } else return resp({ email: email, isVerified: true, cid: customerRecord.pk.S });
+    }
+
+    //if a token is attached, it must be valid
+    const token = event.queryStringParameters?.token;
+    if (token) {
+      const decoded = await db.decodeJWT(token, jwtSecretKey);
+      if (decoded.hasError) {
+        throw new Error("Authorization error: " + decoded.errMessage);
+      }
+      cid = decoded.data.data;
+    }
+
+    //from this point on, we need a valid customer
+    customerRecord = await db.getItem("db-customer", cid);
+    if (!customerRecord) {
+      throw new Error("Customer not found, something went wrong");
+    }
+
+    //at this stage, what's in the record should match sent email
+    const crEmail = customerRecord.email?.S?.trim()?.toLowerCase();
+    if (email !== crEmail) {
+      throw new Error(`${crEmail} and ${email} mismatch, unable to verify.`);
+    }
+
+    //what if the token sent doesn't match the one in the record?
+    if (token && token !== customerRecord.jwt?.S) {
+      throw new Error("Token mismatch, please re-login");
+    }
+
+    // All commands, except register and verify, must have the customer verified; otherwise, disallow
+    if (["verify", "register"].includes(qsp.command) && !customerRecord.isVerified?.BOOL) {
+      throw new Error("Unauthorized, please verify your account first");
+    }
+
+    // we're ready to send the customer record downstream
+    const obj = {
+      cid: cid,
+      email: email,
+      customerExists: true,
+      isVerified: customerRecord.isVerified?.BOOL ?? false,
+      subscriptionEndDate: customerRecord.subscriptionEndDate?.S,
+      subscriptionStatus: customerRecord.subscriptionStatus?.S,
+      subscriptionType: customerRecord.subscriptionType?.S,
+    };
+
+    return resp(obj);
+  } catch (error) {
+    return resp(error.message, false);
   }
+};
 
-  // If the URL sends an email, then it must match
-  const itemEmail = item.email?.S?.trim()?.toLowerCase();
-
-  if (email && email !== itemEmail) {
-    throw new Error(`${itemEmail} and ${email} mismatch, unable to verify.`);
-  }
-
-  // All commands, except register and verify, must have the customer verified; otherwise, disallow
-  if (!item.isVerified) {
-    throw new Error("Unauthorized, please verify your account first");
-  }
-
-  // Let's map the key items for downstream to use
-  const obj = {
-    cid: cid,
-    email: item.email?.S,
-    customerExists: true,
-    isVerified: item.isVerified?.BOOL,
-    subscriptionEndDate: item.subscriptionEndDate?.S,
-    subscriptionStatus: item.subscriptionStatus?.S,
-    subscriptionType: item.subscriptionType?.S,
-  };
-
+const resp = (obj, isAuthorized = true) => {
   return {
     isAuthorized: true,
-    context: { cid: cid, item: obj },
+    context: { isAuthorized: isAuthorized, details: obj },
   };
 };

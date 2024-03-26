@@ -4,7 +4,10 @@
  
  * change log
  * ----------
- * v1.0.8 login request bug fixes
+ * v1.1.1 - fixes and updates as part of testing, all methods working basic
+ * v1.1.0 - modifications based on changes to authorizer
+ * v1.0.9 - fixes and cleanups
+ * v1.0.8 - API cleanups, response code, revamps
  * v1.0.7 login + some cleanups
  * v1.0.6 further tweaks with authorizer, now register, update and verify works, tested on REST client.
  * v1.0.5 incorporating authorizer pre-checks
@@ -18,27 +21,21 @@ import * as db from "/opt/nodejs/node20/owddb.mjs";
 import * as ch from "/opt/nodejs/node20/channels.mjs";
 const devEmail = "m.venugopal@gmail.com";
 const fromEmail = "notice@onwhichdate.com";
-const today = new Date();
-const logLevel = process.env.LOG;
+const logLevel = process.env.LOG_LEVEL;
+const goModify = process.env.DB_MODIFY;
 const jwtSecretKey = "/JWT/general-access-token";
-
-const getCountryFromLanguage = (lang) => {
-  //TODO later
-  return "us";
-};
-
+const generalExpiry = "48h";
 
 const refreshToken = async (forCid, withExpiry = "15m") => {
   const token = await db.encodeJWT(forCid, jwtSecretKey, withExpiry);
   const item = {
-    jwt: { S: token }, 
+    jwt: { S: token },
   };
-  
-  if (forCid != "none") await db.updateItem("db-customer", item, forCid);
-  
-  return token;
-}
 
+  if (forCid != "none") await db.updateItem("db-customer", item, forCid);
+
+  return token;
+};
 
 /**
  * Checks if a customer is already registered based on the provided email.
@@ -50,100 +47,122 @@ const refreshToken = async (forCid, withExpiry = "15m") => {
 
 const sendAuthEmail = async (command, email, cid, withExpiry, templateName) => {
   // create JWT token and send it to the customer for verification
-  const token = await refreshToken(cid, withExpiry)
-  const magicLink = `https://onwhichdate.com/${command}?email=${email}&token=${token}`;
+  const token = await refreshToken(cid, withExpiry);
+  const magicLink = `https://onwhichdate.com/action=${command}&email=${email}&token=${token}`;
   const data = { email: email, name: "Subscriber", magicLink: magicLink };
   const r = await ch.sendEmail(fromEmail, devEmail, templateName, data);
   owd.log(r, "sent email to " + devEmail + " with magic link: " + magicLink);
   return token;
 };
 
-
 export const handler = async (event, context) => {
   try {
     // Extract the command from the API path
-    const command = event.pathParameters?.proxy;
-    owd.log(owd.getVersion(), "\nLib version (note: command = " + command + ")");
+
+    const method = event.requestContext.http.method;
+    const qsp = event.queryStringParameters;
+
+    owd.log(owd.getVersion(), "\nLib version (note: method = " + method + ")");
     owd.log(db.getVersion(), "\nDB version (note: log level = " + logLevel + ")", logLevel);
     owd.log(ch.getVersion(), "\nChannels version", logLevel);
 
-    let obj = event.requestContext.authorizer.lambda.item;
-    //return owd.Response(200, obj);
+    let auth = event.requestContext.authorizer.lambda;
 
-    const { email, cid, isVerified } = obj;
+    //the authorizer tells us whether to proceed or not
+    if (!auth.isAuthorized) {
+      return owd.Response(401, auth.details);
+    }
+
+    const isAuthorized = auth.isAuthorized;
+
+    const { email, cid, isVerified } = auth.details;
 
     // Extract the variables based on the command
     let body;
 
-    // the only difference between register and verify is that we change the customer status to
-    // verified in the verify command, without which logins will fail
-    
-    if(command === "loginrequest") {
-      owd.log(obj, "loginrequest");
-      if (obj.customerExists && obj.isVerified) {
-        let token = await sendAuthEmail(command, obj.email, obj.cid, "48h", "LoginCode");
-        return owd.Response(200, {message: "code sent to your email, please click to login.", "token": token});
+    owd.log(auth, "method: " + method + " / action:" + qsp.action ?? "none");
+    //GET methods are for verify, issue, login, logout
+    //We'll do some basic checks before we proceed
+
+    //customer clicks on the verification link in email sent after registration.
+    //if they're verified, we just log them in, else we send a verification email
+    if (method === "GET" && qsp.action === "verify") {
+      const jwt = await refreshToken(cid, generalExpiry); //TODO eventually make expiry 60m
+      if (auth.isVerified) {
+        return owd.Response(302, { message: "Already verified, redirecting." });
+      }
+
+      const im = await db.updateItem("db-customer", { isVerified: { BOOL: true } }, cid);
+      const data = { email: email, name: "Subscriber", magicLink: "https://onwhichdate.com/login?email=" + email + "&token=" + jwt };
+      let ret = await ch.sendEmail(fromEmail, devEmail, "Welcome", data);
+      return owd.Response(200, { message: "Verification succeeded." });
+    }
+
+    //customer requests a login link
+    if (method === "GET" && qsp.action === "issue") {
+      if (isVerified) {
+        let token = await sendAuthEmail(qsp.action, email, cid, generalExpiry, "LoginCode");
+        return owd.Response(200, { message: "code sent to your email, please click to login.", token: token });
       } else {
-        return owd.Response(401, {message: "either not registered or verified."});
+        return owd.Response(401, { message: "Customer not registered or verified." });
       }
     }
-    
-    if(command === "login") {
-      
-      if (obj.customerExists && obj.isVerified) {
-        const token = await refreshToken(cid, "48h");
-        return owd.Response(200, {message: "successful", "token": token} );
-      } else {
-        return owd.Response(401, {message: "either not registered or verified."});
+
+    //customer clicks on a login link in email
+    if (method === "GET" && qsp.action === "login") {
+      if (!isVerified) {
+        return owd.Response(401, { message: "Either not registered or verified." });
       }
+      const token = await refreshToken(cid, generalExpiry);
+      return owd.Response(200, { message: "Successful", token: token });
     }
-    
-    if (command === "register") {
 
-      //a new customer just registered and passed through basic authorization
-      
-      if (!owd.isValidEmail(obj.email) || isDisposable(obj.email)) {
-        return owd.Response(400, {message: "please use a valid email and non-disposable domain.", "email": email});
+    //customer clicks on a login link in email
+    if (method === "GET" && qsp.action === "logout") {
+      //we refresh token but don't share it.
+      const token = await refreshToken(cid, generalExpiry);
+      return owd.Response(200, { message: "Successful" });
+    }
+
+    //customer clicks on a login link in email
+    if (method === "GET" && qsp.action === "report") {
+      //TODO
+      return owd.Response(501);
+    }
+
+    //a new customer just registered and passed through basic authorization
+    if (method === "POST") {
+      if (isDisposable(email)) {
+        return owd.Response(412, { message: "Invalid or disposable email.", email: email });
       }
 
-      const cust = await db.getCustomerByEmail(obj.email);
-      if (cust && cust.isVerified.BOOL) {
-        return owd.Response(200, {message: "already registered and verified, please login instead."});
+      const customer = await db.getCustomerByEmail(email);
+      if (customer && customer.isVerified.BOOL) {
+        return owd.Response(302, { message: "Already verified." });
       }
 
-      if (cust && !cust.isVerified.BOOL) {
-        const r = await sendAuthEmail(command, cust.email.S, cust.pk.S, "24h", "VerifyAccount");
-        return owd.Response(200, {message: "please verify the link sent to your email."});
+      if (!customer || customer.isVerified.BOOL === false) {
+        const r = await sendAuthEmail("verify", customer.email.S, customer.pk.S, "24h", "VerifyAccount");
+        return owd.Response(200, { message: "please verify the link sent to your email." });
       }
-
-      const country = getCountryFromLanguage(event.queryStringParameters.cc ?? "us");
 
       //we'll create a new customer record but set as unverified
-      const itemDefaults = getCustomerDefault(obj.email, country);
-      const im = await db.putItem("db-customer", itemDefaults);
-      owd.log(im, "inserted item in customer table: cid = " + itemDefaults.pk.S, false);
+      const itemDefaults = getCustomerDefault(email);
+      if (goModify) {
+        const im = await db.putItem("db-customer", itemDefaults);
+        owd.log(im, "inserted item in customer table: cid = " + itemDefaults.pk.S, false);
+      }
 
-      await sendAuthEmail(command, obj.email, itemDefaults.pk.S,  "24h", "VerifyAccount" );
-      return owd.Response(200, "registration succeeded");
+      await sendAuthEmail("verify", email, itemDefaults.pk.S, generalExpiry, "Welcome");
+      return owd.Response(200, "Verification complete");
     }
 
-    if (command === "verify") {
-      //TODO finally make expiry 60m
-      const jwt = await refreshToken(cid, "24h");
-      const im = await db.updateItem("db-customer", { isVerified: { BOOL: true }}, cid);
-      
-      //send them a welcome email and a login link
-      const data = { email: email, name: "Subscriber", magicLink: "https://onwhichdate.com/login?email=" + email + "&token=" + jwt };
-      await ch.sendEmail(fromEmail, devEmail, "Welcome", data);
-      return owd.Response(200, {message: "verification email sent"});
-    }
-
-    if (command === "update") {
+    //customer updates their profile on the web
+    if (method === "PATCH") {
       body = JSON.parse(event.body);
-
-      const itemDefaults = getCustomerDefault(email, getCountryFromLanguage("us"));
+      const itemDefaults = getCustomerDefault(email);
       const nickName = body.nickName ? body.nickName.trim().substring(0, 10) : itemDefaults.nickName.S;
-      const cellNumber = owd.normalizeCellNumber(body.cellNumber ? body.cellNumber : itemDefaults.cellNumber.S);
+      const cellNumber = owd.normalizeCellNumber(body.cellNumber ?? itemDefaults.cellNumber.S);
 
       //only the updatable attributes
       const item = {
@@ -161,18 +180,26 @@ export const handler = async (event, context) => {
         sendTopicUpdates: { BOOL: body.sendTopicUpdates ?? itemDefaults.sendTopicUpdates.BOOL },
       };
 
-      const im = await db.updateItem("db-customer", item, cid);
-      owd.log(im, "successfully updated db-customer:", logLevel);
-      return owd.Response(200, im);
+      if (goModify) {
+        const im = await db.updateItem("db-customer", item, cid);
+        owd.log(im, "successfully updated db-customer:", logLevel);
+      }
+      return owd.Response(200);
     }
-    return owd.Response(401, "unknown command");
+
+    if (method === "DELETE") {
+      //TODO: delete customer record
+      return owd.Response(501);
+    }
+    return owd.Response(501);
   } catch (error) {
     return owd.Response(500, error.message);
   }
 };
 
-function getCustomerDefault(email, country = "us") {
+function getCustomerDefault(email, serviceName = "OWD") {
   const today = new Date();
+  const todayString = today.toISOString().slice(0, 10).replace(/-/g, "");
 
   //compute trial expiry date
   const trialEndDate = new Date();
@@ -180,12 +207,13 @@ function getCustomerDefault(email, country = "us") {
   trialEndDate.setHours(0, 1, 0, 0);
 
   const itemDefaults = {
-    pk: { S: owd.getShortId(15) },
+    pk: { S: serviceName + "-" + todayString + "-" + owd.getShortId(15) },
     email: { S: email },
     nickName: { S: "subscriber" },
     isVerified: { BOOL: false }, //this is critical. if 'no', then no further service available until they verify email to 'yes'
     cellNumber: { S: "+10000000000" },
-    countryCode: { S: country },
+    countryCode: { S: "us" }, //default US, customer can change on their profile
+    service: { S: serviceName }, //for future use where multiple services may be in the same database or same customers
     stateCode: { S: "na" },
     isCellVerified: { BOOL: false },
     registrationDate: { S: today.toISOString() },
