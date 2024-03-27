@@ -163,7 +163,7 @@ export const handler = async (event, context) => {
     return owd.Response(404, { message: "Unknown command", event: event });
   } catch (error) {
     owd.error(error.message);
-    return owd.Response(500, error.message));
+    return owd.Response(500, error.message);
   }
 
   async function createAndInsertNotices(offsetArray, expiresOn, docId, body) {
