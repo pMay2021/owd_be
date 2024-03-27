@@ -21,8 +21,8 @@ import * as db from "/opt/nodejs/node20/owddb.mjs";
 import * as ch from "/opt/nodejs/node20/channels.mjs";
 const devEmail = "m.venugopal@gmail.com";
 const fromEmail = "notice@onwhichdate.com";
-const logLevel = process.env.LOG_LEVEL;
-const goModify = process.env.DB_MODIFY;
+const goModify = process.env.DB_MODIFY === "TRUE";
+const logLevel = process.env.LOG_LEVEL || "DEBUG"; 
 const jwtSecretKey = "/JWT/general-access-token";
 const generalExpiry = "48h";
 

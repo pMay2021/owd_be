@@ -2,14 +2,41 @@
 // @token (v7@) = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiOG9MSE9jQmp5TlhqU0hKIiwiaWF0IjoxNzEwOTU3MDY5LCJleHAiOjE3MTA5NjA2Njl9.R0MnPb0VoDGQoOQiywgNmJPFqWJiAKCrZta_APhoZhE
 // @email = m.v6@gmail.com
 
+// updated v2.0 reminder management API, uses HTTP methods rather than
+// internal commands
+// API source map: /v1/reminders/
+// +-------+---------+-----+-------+-----------------------+
+// | HTTP  | Op      | Web | Email | Notes                 |
+// +-------+---------+-----+-------+-----------------------+
+// | POST  | ADD     |  x  |       | new parent            |
+// +-------+---------+-----+-------+-----------------------+
+// | PUT   | INSERT  |  x  |       | new child             |
+// +-------+---------+-----+-------+-----------------------+
+// | PATCH | UPDATE  |     |       | update existing       |
+// +-------+---------+-----+-------+-----------------------+
+// | GET   | REPORT  |     |       | reporting             |
+// +-------+---------+-----+-------+-----------------------+
+// | GET   | DUE     |     |       | next n or all parent  |
+// +-------+---------+-----+-------+-----------------------+
+// | GET   |   |     |       | children of parent    |
+// +-------+---------+-----+-------+-----------------------+
+// | DELETE| DELETE  |     |       | delete                |
+// +-------+---------+-----+-------+-----------------------+
+
 @ep =44dad13dwb.execute-api.us-east-1.amazonaws.com/v1/api
 
-
 @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiM2JITWVMSWxFWFBpa0tDIiwiaWF0IjoxNzExMjQ2MTQ2LCJleHAiOjE3MTE0MTg5NDZ9.rcPjGR8B6ktOMgkXoS3cnrm3bO6t_R9KGk4k1ghuP9h
-@email = m.v8@gmail.com
 
-// add a reminder
-POST https://{{ep}}/reminders/add?email={{email}}&token={{token}} HTTP/1.1
+@email = owd.test.1@gmail.com
+
+@key = ABCDEFG
+
+// ADD a new parent reminder for a document
+// key is required for all operations (AWS key)
+// response: 
+//- 201 Created
+//- 400 Bad Request
+POST https://{{ep}}/reminders?email={{email}}&token={{token}}&key={{key}} HTTP/1.1
 content-type: application/json
 
 {
@@ -23,13 +50,18 @@ content-type: application/json
     "notes": "for sara"
 }
 
-###
+### 
 
-https://44dad13dwb.execute-api.us-east-1.amazonaws.com/v1/api/reminders/add?email=ginga@gunga.com&token=abcde HTTP/1.1
+// INSERT a child reminder for a parent 
+// key is required for all operations (AWS key)
+// response: 
+//- 201 Created
+//- 400 Bad Request
+PUT https://{{ep}}/reminders?email={{email}}&token={{token}}&key={{key}} HTTP/1.1
 content-type: application/json
 
 {
-    "docId": "passport",
+    "docId": "travel|us#passport",
     "expiresOn": "2029-03-22",
     "sendSMS": "false",
     "sendEmail": "true",
@@ -42,31 +74,69 @@ content-type: application/json
 
 ###
 
+// UPDATE an existing child reminder
+// response: 
+//- 201 Successful
+//- 400 Bad Request
+PATCH https://{{ep}}/reminders?email={[email}}&token{{token}}&id={{id}}&key={{key}} HTTP/1.1
+content-type: application/json
+
+{
+    "docId": "travel|us#passport",
+    "expiresOn": "2029-03-22",
+    "sendSMS": "false",
+    "sendEmail": "true",
+    "sendPush": "false",
+    "sendWhatsapp": "false",
+    "alsoCC": "false",
+    "notes": "for sara"
+}
+
+
+###
+
+// DELETE a specific parent or child reminder. 
+// If the id is a parent, all children are deleted.
+// response: 
+//- 201 Successful
+//- 404 Not Found
+//- 400 Bad Request
 @id = rOPXee1FeRKkGOK
 // delete a specific notice by id
-POST https://{{ep}}/reminders/delete?email={{email}}&token={{token}}&id={{id}} HTTP/1.1
+DELETE https://{{ep}}/reminders?token={{token}}&id={{id}}&key={{key}} HTTP/1.1
 content-type: application/json
 
 {
 }
 
 
-
 ###
 
-// update a specific notice by id
-POST https://{{ep}}/reminders/update?email={{email}}&token={{token}}&id={{id}} HTTP/1.1
-content-type: application/json
+// GET the next n deadlines for a customer
+// /parents only returns all parents
+// /parents/12345 returns all children of parent 12345
+// response:
+//- 200 OK
+//- 400 Bad Request
+//- 404 Not Found (no reminders)
 
-
-{
-    "date": "2033-12-20",
-    "alsoCC": "false",
-    "notes": "an update :4"
-}
-
-###
-GET https://{{ep}}/reminders/get?email={{email}}&token={{token}}&n=3 HTTP/1.1
+GET https://{{ep}}/reminders/parents/12345?limit=25 HTTP/1.1
+Authorization: {{token}}
 content-type: application/json
 
 {}
+
+###
+
+
+// GET the a deadline all its notifications
+// response:
+//- 200 OK
+//- 400 Bad Request
+//- 404 Not Found (no reminders)
+GET https://{{ep}}/reminders?action=single&email={{email}}&token={{token}}&id={{id}} HTTP/1.1
+content-type: application/json
+
+{}
+
+

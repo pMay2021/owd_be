@@ -2,23 +2,10 @@ import * as owd from "/opt/nodejs/node20/owd.mjs";
 import * as db from "/opt/nodejs/node20/owddb.mjs";
 
 /*
- * This code manages (add, delete, update) notices.
- * Add: when a customer adds a document, notices are created for the expiry dates.
- * Delete: when a customer deletes a document, all notices are deleted, or deletes a specific notice.
- * Update: when a customer updates a specific notice.
- * We do not support updating the expiry date of the document, as that would require a cascade update of all notices.
+ * This code allows clients to query the reminders database. Only the GET method is supported.
  *
  * Change log:
  * ----------
- * v1.1.0 - updating for new API
- * v1.0.9 - added service field
- * v1.0.8 - additional cleanup, minor fixes.
- * v1.0.7 - cleanups, authorizer management. Add, delete, update, and get work.
- * v1.0.6 - now with new db layer with PartiQL, support for get.
- * v1.0.5 - new layer, better error check on delete.
- * v1.0.4 - delete and update code, change in schema; delete and update work.
- * v1.0.3 - logging improvements and minor fixes, notice additions work; add works, need to extend to commands with add, delete, update.
- * v1.0.2 - layer updated, code updated for revised schema.
  * v1.0.1 - basic version works through test and POST.
  */
 
@@ -29,7 +16,6 @@ const logLevel = process.env.LOG_LEVEL || "DEBUG"; // Set to true to enable actu
 export const handler = async (event, context) => {
     const method = event.requestContext.http.method;
     const qsp = event.queryStringParameters;
-
     let auth = event.requestContext.authorizer.lambda;
 
     //the authorizer tells us whether to proceed or not
