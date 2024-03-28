@@ -4,6 +4,7 @@
  
  * change log
  * ----------
+ * v1.1.2 - additional fixes
  * v1.1.1 - fixes and updates as part of testing, all methods working basic
  * v1.1.0 - modifications based on changes to authorizer
  * v1.0.9 - fixes and cleanups
@@ -21,8 +22,8 @@ import * as db from "/opt/nodejs/node20/owddb.mjs";
 import * as ch from "/opt/nodejs/node20/channels.mjs";
 const devEmail = "m.venugopal@gmail.com";
 const fromEmail = "notice@onwhichdate.com";
-const goModify = process.env.DB_MODIFY === "TRUE";
-const logLevel = process.env.LOG_LEVEL || "DEBUG"; 
+const logLevel = process.env.LOG_LEVEL;
+const goModify = process.env.DB_MODIFY;
 const jwtSecretKey = "/JWT/general-access-token";
 const generalExpiry = "48h";
 
@@ -47,7 +48,9 @@ const refreshToken = async (forCid, withExpiry = "15m") => {
 
 const sendAuthEmail = async (command, email, cid, withExpiry, templateName) => {
   // create JWT token and send it to the customer for verification
+
   const token = await refreshToken(cid, withExpiry);
+
   const magicLink = `https://onwhichdate.com/action=${command}&email=${email}&token=${token}`;
   const data = { email: email, name: "Subscriber", magicLink: magicLink };
   const r = await ch.sendEmail(fromEmail, devEmail, templateName, data);
@@ -101,7 +104,7 @@ export const handler = async (event, context) => {
     //customer requests a login link
     if (method === "GET" && qsp.action === "issue") {
       if (isVerified) {
-        let token = await sendAuthEmail(qsp.action, email, cid, generalExpiry, "LoginCode");
+        let token = await sendAuthEmail("login", email, cid, generalExpiry, "LoginCode");
         return owd.Response(200, { message: "code sent to your email, please click to login.", token: token });
       } else {
         return owd.Response(401, { message: "Customer not registered or verified." });
@@ -137,24 +140,25 @@ export const handler = async (event, context) => {
       }
 
       const customer = await db.getCustomerByEmail(email);
+
+      //if we can't find the customer, create basic record and ask them to verify email
+      if (!customer) {
+        //we'll create a new customer record but set as unverified
+        const itemDefaults = getCustomerDefault(email);
+        const im = await db.putItem("db-customer", itemDefaults);
+        const r = await sendAuthEmail("verify", email, itemDefaults.pk.S, "24h", "VerifyAccount");
+        return owd.Response(202, { message: "Link verification required." });
+      }
+
+      //if the customer's been found and has already verified, tell them to login
       if (customer && customer.isVerified.BOOL) {
         return owd.Response(302, { message: "Already verified." });
       }
 
-      if (!customer || customer.isVerified.BOOL === false) {
-        const r = await sendAuthEmail("verify", customer.email.S, customer.pk.S, "24h", "VerifyAccount");
-        return owd.Response(200, { message: "please verify the link sent to your email." });
+      if (customer && customer.isVerified.BOOL === false) {
+        const r = await sendAuthEmail("verify", email, customer.pk.S, "24h", "VerifyAccount");
+        return owd.Response(202, { message: "You are registered, but need to verify the link." });
       }
-
-      //we'll create a new customer record but set as unverified
-      const itemDefaults = getCustomerDefault(email);
-      if (goModify) {
-        const im = await db.putItem("db-customer", itemDefaults);
-        owd.log(im, "inserted item in customer table: cid = " + itemDefaults.pk.S, false);
-      }
-
-      await sendAuthEmail("verify", email, itemDefaults.pk.S, generalExpiry, "Welcome");
-      return owd.Response(200, "Verification complete");
     }
 
     //customer updates their profile on the web

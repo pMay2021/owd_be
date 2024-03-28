@@ -26,9 +26,9 @@
 
 // sample values
 @ep = 77uxp6az23.execute-api.us-east-1.amazonaws.com/v1/api
-@email = api.revised.1@gmail.com
+@email = owd.test.1@gmail.com
 @key = ABCDEFG
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiT1dELTIwMjQwMzI2LTVBMFZBOWkxQXdzV2JGbiIsImlhdCI6MTcxMTQyNzY2MiwiZXhwIjoxNzExNjAwNDYyfQ.lX4gaiLnff1yVIbQvSx3LmpePmkFcIJX-1m2eGeXbho
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiT1dELTIwMjQwMzI4LUc2QXl0Z050S2kyZkxDSSIsImlhdCI6MTcxMTU5Nzc2MiwiZXhwIjoxNzExNzcwNTYyfQ.JVkJQJP7xFtGBF5pKUvBsR2AE2IXZxsSxkfsqIdkFzk
 
 
 
