@@ -3,6 +3,7 @@ import * as db from "/opt/nodejs/node20/owddb.mjs";
 
 // This core authorizer is used only where tokens are required
 // and sent in the authorization header
+// v0.2 - 2024-03-28 - minor fixes
 // v0.1 - 2024-03-27 - Initial version
 
 const jwtSecretKey = "/JWT/general-access-token";
