@@ -1,0 +1,65 @@
+## areminders GET request /reminders/parents/{parentId}
+
+HTTP/1.1 200 OK
+Date: Thu, 28 Mar 2024 20:25:34 GMT
+Content-Type: text/plain; charset=utf-8
+Content-Length: 1481
+Connection: close
+Apigw-Requestid: VW3Jkgu2IAMEJnw=
+
+{
+  "version": "2.0",
+  "routeKey": "GET /api/reminders/parents/{parentId}",
+  "rawPath": "/v1/api/reminders/parents/122345",
+  "rawQueryString": "limit=10",
+  "headers": {
+    "accept-encoding": "gzip, deflate",
+    "authorization": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiT1dELTIwMjQwMzI4LUc2QXl0Z050S2kyZkxDSSIsImlhdCI6MTcxMTU5Nzc2MiwiZXhwIjoxNzExNzcwNTYyfQ.JVkJQJP7xFtGBF5pKUvBsR2AE2IXZxsSxkfsqIdkFzk",
+    "content-length": "0",
+    "content-type": "application/json",
+    "host": "44dad13dwb.execute-api.us-east-1.amazonaws.com",
+    "user-agent": "vscode-restclient",
+    "x-amzn-trace-id": "Root=1-6605d23c-46a87adb35534f7903fc4084",
+    "x-forwarded-for": "174.61.230.74",
+    "x-forwarded-port": "443",
+    "x-forwarded-proto": "https"
+  },
+  "queryStringParameters": {
+    "limit": "10"
+  },
+  "requestContext": {
+    "accountId": "627389239307",
+    "apiId": "44dad13dwb",
+    "authorizer": {
+      "lambda": {
+        "details": {
+          "cid": "OWD-20240328-G6AytgNtKi2fLCI",
+          "customerExists": true,
+          "isVerified": true,
+          "subscriptionEndDate": "2024-06-29T00:01:00.000Z",
+          "subscriptionStatus": "active",
+          "subscriptionType": "trial"
+        },
+        "isAuthorized": true
+      }
+    },
+    "domainName": "44dad13dwb.execute-api.us-east-1.amazonaws.com",
+    "domainPrefix": "44dad13dwb",
+    "http": {
+      "method": "GET",
+      "path": "/v1/api/reminders/parents/122345",
+      "protocol": "HTTP/1.1",
+      "sourceIp": "174.61.230.74",
+      "userAgent": "vscode-restclient"
+    },
+    "requestId": "VW3Jkgu2IAMEJnw=",
+    "routeKey": "GET /api/reminders/parents/{parentId}",
+    "stage": "v1",
+    "time": "28/Mar/2024:20:25:32 +0000",
+    "timeEpoch": 1711657532982
+  },
+  "pathParameters": {
+    "parentId": "122345"
+  },
+  "isBase64Encoded": false
+}

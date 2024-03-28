@@ -6,14 +6,16 @@ import * as db from "/opt/nodejs/node20/owddb.mjs";
  *
  * Change log:
  * ----------
- * v1.0.1 - basic version works through test and POST.
+ * v1.0.2 - GET /parents/{parentId} works
+ * v1.0.1 - GET /parents works
  */
 
 const goModify = process.env.DB_MODIFY === "TRUE";
 const logLevel = process.env.LOG_LEVEL || "DEBUG"; // Set to true to enable actual db operations
 
 export const handler = async (event, context) => {
-  const qsp = event.queryStringParameters;
+  const queryParams = event.queryStringParameters;
+  const pathParams = event.pathParameters;
   let auth = event.requestContext.authorizer.lambda;
   let routeKey = event.routeKey;
 
@@ -34,39 +36,50 @@ export const handler = async (event, context) => {
   };
 
   owd.info(runDisplay, "Execution Variables");
-  const body = JSON.parse(event.body);
-  const { docId, expiresOn } = body;
-  let { status, content } = obj;
+  let obj = { status: 200, content: "" };
 
   try {
     //we'll act based on request type
     //TODO - implement limits in the query
 
-    if (routeKey.endsWith("/parent")) {
+    let items;
+
+    const { limits = -1 } = queryParams;
+
+    //get only the parent notices for a customer
+    if (routeKey.endsWith("/parents")) {
       // get parent notices only
-      const { limits = -1 } = qsp;
-      const items = await db.getParentNoticesByCid(cid);
-      if (!items || items.Count === 0) {
-        return owd.Response(404, "No data for customer");
-      }
-
-      const ret = items
-        ?.map((n) => {
-          const i = {
-            doc: n.documentId?.S,
-            expires: n.originalExpiryOn?.S,
-            dueIn: n.dueInDays?.N,
-            id: n.pk?.S,
-            parentId: n.parentKey?.S,
-            type: n.type?.S,
-          };
-
-          return i;
-        })
-        .filter((f) => f.type === "owd#notice");
-
-      return owd.Response(404, { message: "Unknown command", event: event });
+      items = await db.getParentNoticesByCid(cid);
     }
+
+    //get all notices for a customer for a specific parent, including the parent notice
+    if (pathParams.parentId) {
+      const items = await db.getNoticesByParentKey(pathParams.parentId);
+      if (!items || items.Count === 0) {
+        throw Error("No data for parent: " + pathParams.parentId);
+      }
+    }
+
+    if (!items || items.Count === 0) {
+      throw Error("No data for customer: " + cid);
+    }
+
+    const ret = items
+      .map((n) => {
+        const i = {
+          doc: n.documentId?.S,
+          expires: n.originalExpiryOn?.S,
+          dueIn: n.dueInDays?.N,
+          id: n.pk?.S,
+          parentId: n.parentKey?.S,
+          type: n.type?.S,
+        };
+
+        return i;
+      })
+      .filter((f) => f.type === "owd#notice");
+
+    return owd.Response(200, ret);
   } catch (error) {
     owd.error(error.message);
     return owd.Response(500, error.message);

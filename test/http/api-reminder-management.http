@@ -118,7 +118,7 @@ content-type: application/json
 //- 400 Bad Request
 //- 404 Not Found (no reminders)
 
-GET https://{{ep}}/reminders/parents/12345?limit=25 HTTP/1.1
+GET https://{{ep}}/reminders/parents?limit=25 HTTP/1.1
 Authorization: {{token}}
 content-type: application/json
 
@@ -127,6 +127,6 @@ content-type: application/json
 ###
 
 
-GET https://{{ep}}/reminders/parents?limit=10 HTTP/1.1
+GET https://{{ep}}/reminders/parents/122345?limit=10 HTTP/1.1
 Authorization: {{token}}
 content-type: application/json
