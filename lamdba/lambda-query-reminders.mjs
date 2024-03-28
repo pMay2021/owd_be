@@ -9,25 +9,22 @@ import * as db from "/opt/nodejs/node20/owddb.mjs";
  * v1.0.1 - basic version works through test and POST.
  */
 
-
 const goModify = process.env.DB_MODIFY === "TRUE";
 const logLevel = process.env.LOG_LEVEL || "DEBUG"; // Set to true to enable actual db operations
 
 export const handler = async (event, context) => {
-    const method = event.requestContext.http.method;
-    const qsp = event.queryStringParameters;
-    let auth = event.requestContext.authorizer.lambda;
+  const qsp = event.queryStringParameters;
+  let auth = event.requestContext.authorizer.lambda;
+  let routeKey = event.routeKey;
 
-    //the authorizer tells us whether to proceed or not
-    if (!auth.isAuthorized) {
-      return owd.Response(401, auth.details);
-    }
+  //the authorizer tells us whether to proceed or not
+  if (!auth.isAuthorized) {
+    return owd.Response(401, auth.details);
+  }
 
-    const isAuthorized = auth.isAuthorized;
-    const { email, cid, isVerified } = auth.details;
+  const { email, cid, isVerified } = auth.details;
 
-    // Extract the variables based on the command
-  
+  // Extract the variables based on the command
   const hour = new Date().getHours().toString().padStart(2, "0");
   const runDisplay = {
     libVersion: owd.getVersion(),
@@ -39,109 +36,20 @@ export const handler = async (event, context) => {
   owd.info(runDisplay, "Execution Variables");
   const body = JSON.parse(event.body);
   const { docId, expiresOn } = body;
-  let {status, content} = obj;
+  let { status, content } = obj;
 
   try {
+    //we'll act based on request type
+    //TODO - implement limits in the query
 
-    // Add a new parent due date
-    if (method === "POST") { 
-      if (!cid || !expiresOn) {
-        throw new Error("Missing required parameters (cid or expiresOn)");
-      }
-      
-      const customerDb = await db.getItem("db-customer", cid);
-      if (!customerDb) {
-        throw new Error(`Customer ${email} not found`);
-      }
-
-      const [dpk, dsk] = docId.split("|");
-
-      const docDb = await db.getItem("db-document", dpk, dsk);
-      if (!docDb) {
-        throw new Error(`Document ${docId} not found`);
-      }
-
-      const offsetArray = docDb.reminderOffsetDays?.L?.map((x) => x?.N);
-      if (!offsetArray || offsetArray.length === 0) {
-        throw new Error("Invalid or empty reminder offset days");
-      }
-      
-      const newDates = await createAndInsertNotices(offsetArray, expiresOn, docDb.pk.S + "|" + docDb.sk.S, body);
-      
-      const retJson = { notices: newDates };
-      status = 200; content = retJson;
-    }
-
-    // Delete a notice; if parent then delete all children
-    if (method === "DELETE") {
-      const { id } = qsp
-      if (!id) {
-        throw new Error("Invalid or empty id");
-      }
-
-      const noticeDb = await db.getItem("db-notices", id);
-      if (!noticeDb) {
-        throw new Error("No record for this id: " + id);
-      }
-
-      if (cid !== noticeDb.cid?.S) {
-        throw new Error("Customer/notice mismatch; verification failed");
-      }
-
-      // TODO: if it's a parent, then we delete all children
-
-      if (goModify) {
-        const resp = await db.deleteItem("db-notices", id);
-      } else {
-        owd.debug("Skipping actual db operation");
-      }
-
-      status = 200; content = "Deleted notice: " + id;
-    }
-
-    // Update a child notice
-    if (method === "PATCH") {
-      const { id } = qsp;
-      if (!id) {
-        throw new Error("Missing/Invalid id");
-      }
-
-      const noticeDb = await db.getItem("db-notices", id);
-      if (!noticeDb) {
-        throw new Error("No record for this id: " + id);
-      }
-
-      if(noticeDb.isParent?.BOOL) {
-        throw new Error("Updating parent notice disallowed");
-      }
-
-      const daysRemainingObj = owd.getFriendlyDateDifference(body.date, noticeDb.originalExpiryOn?.S);
-
-      const noticeItem = {
-        slot: { S: body.date + "#" + hour },
-        addedOn: { S: new Date().toISOString() },
-        alsoCC: { BOOL: body.alsoCC },
-        dueInDays: { N: daysRemainingObj.totalDaysDifference + "" },
-        notes: { S: body.notes },
-      };
-
-      if (goModify) {
-        const resp = await db.updateItem("db-notices", noticeItem, id);
-        status = 200; content = "Updated notice: " + id;
-      } else {
-        owd.debug("Skipping actual db operation");
-        status = 200; content = "Skipped update, but successful operation";
-      }
-    }
-
-    // Get some or all due dates for a customer
-    if (method === "GET") {
-      // TODO: for now, we don't limit reads, we'll pull all parent notices
-      const { n } = qsp;
+    if (routeKey.endsWith("/parent")) {
+      // get parent notices only
+      const { limits = -1 } = qsp;
       const items = await db.getParentNoticesByCid(cid);
       if (!items || items.Count === 0) {
         return owd.Response(404, "No data for customer");
       }
+
       const ret = items
         ?.map((n) => {
           const i = {
@@ -155,12 +63,10 @@ export const handler = async (event, context) => {
 
           return i;
         })
-        .filter((f) => f.type === "owdnotice");
+        .filter((f) => f.type === "owd#notice");
 
-      return owd.Response(200, ret);
+      return owd.Response(404, { message: "Unknown command", event: event });
     }
-
-    return owd.Response(404, { message: "Unknown command", event: event });
   } catch (error) {
     owd.error(error.message);
     return owd.Response(500, error.message);
@@ -199,11 +105,10 @@ export const handler = async (event, context) => {
         notes: { S: body.notes },
         dueInDays: { N: date.dueInDays },
       };
-      
-    
+
       owd.log(noticeItem, "Constructed notice entry for");
       if (goModify) {
-    //    throw new Error(`about to putItem: expiresOn: ${expiresOn}, docId: ${docId} and body: ${JSON.stringify(noticeItem)}`)
+        //    throw new Error(`about to putItem: expiresOn: ${expiresOn}, docId: ${docId} and body: ${JSON.stringify(noticeItem)}`)
         const resp = await db.putItem("db-notices", noticeItem);
         owd.info(resp, "Added notice to db");
       } else {
