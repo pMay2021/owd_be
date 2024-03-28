@@ -25,7 +25,7 @@
 
 @ep =44dad13dwb.execute-api.us-east-1.amazonaws.com/v1/api
 
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiM2JITWVMSWxFWFBpa0tDIiwiaWF0IjoxNzExMjQ2MTQ2LCJleHAiOjE3MTE0MTg5NDZ9.rcPjGR8B6ktOMgkXoS3cnrm3bO6t_R9KGk4k1ghuP9h
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiT1dELTIwMjQwMzI4LUc2QXl0Z050S2kyZkxDSSIsImlhdCI6MTcxMTU5Nzc2MiwiZXhwIjoxNzExNzcwNTYyfQ.JVkJQJP7xFtGBF5pKUvBsR2AE2IXZxsSxkfsqIdkFzk
 
 @email = owd.test.1@gmail.com
 
@@ -36,7 +36,8 @@
 // response: 
 //- 201 Created
 //- 400 Bad Request
-POST https://{{ep}}/reminders?email={{email}}&token={{token}}&key={{key}} HTTP/1.1
+POST https://{{ep}}/reminders?key={{key}} HTTP/1.1
+Authorization: {{token}}
 content-type: application/json
 
 {
@@ -57,7 +58,8 @@ content-type: application/json
 // response: 
 //- 201 Created
 //- 400 Bad Request
-PUT https://{{ep}}/reminders?email={{email}}&token={{token}}&key={{key}} HTTP/1.1
+PUT https://{{ep}}/reminders?key={{key}} HTTP/1.1
+Authorization: {{token}}
 content-type: application/json
 
 {
@@ -78,7 +80,8 @@ content-type: application/json
 // response: 
 //- 201 Successful
 //- 400 Bad Request
-PATCH https://{{ep}}/reminders?email={[email}}&token{{token}}&id={{id}}&key={{key}} HTTP/1.1
+PATCH https://{{ep}}/reminders?id={{id}}&key={{key}} HTTP/1.1
+Authorization: {{token}}
 content-type: application/json
 
 {
@@ -103,7 +106,8 @@ content-type: application/json
 //- 400 Bad Request
 @id = rOPXee1FeRKkGOK
 // delete a specific notice by id
-DELETE https://{{ep}}/reminders?token={{token}}&id={{id}}&key={{key}} HTTP/1.1
+DELETE https://{{ep}}/reminders?id={{id}}&key={{key}} HTTP/1.1
+Authorization: {{token}}
 content-type: application/json
 
 {
@@ -129,14 +133,6 @@ content-type: application/json
 ###
 
 
-// GET the a deadline all its notifications
-// response:
-//- 200 OK
-//- 400 Bad Request
-//- 404 Not Found (no reminders)
-GET https://{{ep}}/reminders?action=single&email={{email}}&token={{token}}&id={{id}} HTTP/1.1
+GET https://{{ep}}/reminders/parents?limit=10 HTTP/1.1
+Authorization: {{token}}
 content-type: application/json
-
-{}
-
-

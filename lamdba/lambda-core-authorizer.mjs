@@ -7,10 +7,10 @@ import * as db from "/opt/nodejs/node20/owddb.mjs";
 
 const jwtSecretKey = "/JWT/general-access-token";
 
-export const handler = async (event, context, callback) => {
+export const handler = async (event, context) => {
   try {
     let cid, customerRecord;
-    const token = event.requestContext.headers.authorization ?? event.queryStringParameters?.token;
+    const token = event.headers.authorization ?? event.queryStringParameters?.token;
     if (!token) {
       throw new Error("Authorization token is missing");
     }
@@ -30,16 +30,15 @@ export const handler = async (event, context, callback) => {
     let email = event.queryStringParameters?.email;
     if (email) {
       email = email.trim()?.toLowerCase();
-
       if (owd.isValidEmail(email) === false) {
         throw new Error("Invalid email format");
       }
-    }
 
-    //at this stage, what's in the record should match sent email
-    const crEmail = customerRecord.email.S.trim().toLowerCase();
-    if (email !== crEmail) {
-      throw new Error(`${crEmail} and ${email} mismatch, unable to verify.`);
+      //at this stage, what's in the record should match sent email
+      const crEmail = customerRecord.email.S.trim().toLowerCase();
+      if (email !== crEmail) {
+        throw new Error(`${crEmail} and ${email} mismatch, unable to verify.`);
+      }
     }
 
     //what if the token sent doesn't match the one in the record?
