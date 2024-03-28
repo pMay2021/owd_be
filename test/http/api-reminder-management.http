@@ -127,6 +127,6 @@ content-type: application/json
 ###
 
 
-GET https://{{ep}}/reminders/parents/122345?limit=10 HTTP/1.1
+GET https://{{ep}}/reminders/parents/RINFcdO-NrrlnA4?limit=10 HTTP/1.1
 Authorization: {{token}}
 content-type: application/json
