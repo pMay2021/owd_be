@@ -10,7 +10,7 @@ import * as db from "/opt/nodejs/node20/owddb.mjs";
  *
  * Change log:
  * ----------
- * v1.2.1 - minor fixes
+ * v1.2.1 - ongoing, DELETE in progress
  * v1.2.0 - removed GET; functions here are for modifications only
  * v1.1.0 - updating for new API
  * v1.0.9 - added service field
@@ -31,14 +31,13 @@ const logLevel = process.env.LOG_LEVEL || "DEBUG"; // Set to true to enable actu
 export const handler = async (event, context) => {
     const method = event.requestContext.http.method;
     const qsp = event.queryStringParameters;
-    
-
     let auth = event.requestContext.authorizer.lambda;
 
     //the authorizer tells us whether to proceed or not
     if (!auth.isAuthorized) {
       return owd.Response(401, auth.details);
     }
+
 
     const { email, cid, isVerified } = auth.details;
 
@@ -53,8 +52,8 @@ export const handler = async (event, context) => {
   };
 
   owd.info(runDisplay, "Execution Variables");
-  const body = JSON.parse(event.body);
-  const { docId, expiresOn } = body;
+  const body = event.body ? JSON.parse(event.body): {};
+  const { docId, expiresOn } = body ?? {docId: "", expiresOn: "0000-00-00"};
   let obj = { status: 200, content: ""};
   let {status, content} = obj;
 
@@ -62,6 +61,8 @@ export const handler = async (event, context) => {
 
     // Add a new parent due date
     if (method === "POST") { 
+      
+      owd.Response(200, "we came to post");
       
       if (!cid || !expiresOn) {
         throw new Error("Missing required parameters (cid or expiresOn)");
@@ -90,9 +91,11 @@ export const handler = async (event, context) => {
       status = 200; content = retJson;
     }
 
+
     // Delete a notice; if parent then delete all children
     if (method === "DELETE") {
-      const { id } = qsp
+      const { id } = qsp;
+      
       if (!id) {
         throw new Error("Invalid or empty id");
       }
@@ -204,6 +207,7 @@ export const handler = async (event, context) => {
 
       ret.push({
         id: pk,
+        parentKey: parentKey,
         date: date,
       });
     }

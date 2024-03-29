@@ -101,13 +101,22 @@ content-type: application/json
 //- 404 Not Found
 //- 400 Bad Request
 // delete a specific notice by id
-DELETE https://{{ep}}/reminders?id={{id}}&key={{key}} HTTP/1.1
+@delid = 1geYttTcSLQrdCc
+DELETE https://{{ep}}/reminders?id={{delid}}&key={{key}} HTTP/1.1
 Authorization: {{token}}
 content-type: application/json
 
 {
 }
 
+###
+
+DELETE https://44dad13dwb.execute-api.us-east-1.amazonaws.com/v1/api/reminders?id=1geYttTcSLQrdCc HTTP/1.1
+Authorization: {{token}}
+content-type: application/json
+
+{
+}
 
 ###
 
