@@ -26,7 +26,7 @@
 
 // sample values
 @ep = 77uxp6az23.execute-api.us-east-1.amazonaws.com/v1/api
-@email = owd.test.1@gmail.com
+@email = owd.test.2@gmail.com
 @key = ABCDEFG
 @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiT1dELTIwMjQwMzI4LUc2QXl0Z050S2kyZkxDSSIsImlhdCI6MTcxMTU5Nzc2MiwiZXhwIjoxNzExNzcwNTYyfQ.JVkJQJP7xFtGBF5pKUvBsR2AE2IXZxsSxkfsqIdkFzk
 
@@ -41,7 +41,7 @@
 // - 406 Not acceptable if the email is not valid or already exists
 // - 412 Precondition failed; conflict if the email is not valid or already exists
 
-POST https://{{ep}}/customer?email={{email}}&key={{key}} HTTP/1.1
+POST https://{{ep}}/customers/register?email={{email}}&key={{key}} HTTP/1.1
 content-type: application/json
 
 {
@@ -60,7 +60,7 @@ content-type: application/json
 // - 302 Found, FE redirect to dashboard
 // - 401 Unauthorized if the email is not valid or customer not verified
 
-GET https://{{ep}}/customer?action=verify&email={{email}}&token={{token}} HTTP/1.1
+POST https://{{ep}}/customers/verify?email={{email}}&token={{token}} HTTP/1.1
 content-type: application/json
 
 {
@@ -77,7 +77,7 @@ content-type: application/json
 // - 200 OK if the email is valid and link sent to email
 // - 404 Not Found if the email is not valid or customer not verified (tell them to register)
 
-GET https://{{ep}}/customer?action=issue&email={{email}} HTTP/1.1
+POST https://{{ep}}/customers/authorize?email={{email}} HTTP/1.1
 content-type: application/json
 
 {
@@ -87,7 +87,7 @@ content-type: application/json
 ###
 
 // LOGIN a customer. See VERIFY for other instructions and responses.
-GET https://{{ep}}/customer?action=login&email={{email}}&token={{token}} HTTP/1.1
+POST https://{{ep}}/customers/login?email={{email}}&token={{token}} HTTP/1.1
 content-type: application/json
 
 {
@@ -103,7 +103,7 @@ content-type: application/json
 // response: 
 // - 302 redirect to home page
 
-GET https://{{ep}}/customer?action=logout&email={{email}}&token={{token}}&key={{key}} HTTP/1.1
+POST https://{{ep}}/customers/logout?email={{email}}&token={{token}}&key={{key}} HTTP/1.1
 content-type: application/json
 
 {
@@ -120,7 +120,7 @@ content-type: application/json
 // - 200 OK  
 // - 500 Internal Server Error if something went wrong
 
-PATCH https://{{ep}}/customer?email={{email}}&token={{token}}&key={{key}}  HTTP/1.1
+PATCH https://{{ep}}/customers?email={{email}}&token={{token}}&key={{key}}  HTTP/1.1
 content-type: application/json
 
 {

@@ -4,6 +4,7 @@
  
  * change log
  * ----------
+ * v1.2.0 - API redesign for POST verbs
  * v1.1.2 - additional fixes
  * v1.1.1 - fixes and updates as part of testing, all methods working basic
  * v1.1.0 - modifications based on changes to authorizer
@@ -61,14 +62,70 @@ const sendAuthEmail = async (command, email, cid, withExpiry, templateName) => {
 export const handler = async (event, context) => {
   try {
     // Extract the command from the API path
-
     const method = event.requestContext.http.method;
-    const qsp = event.queryStringParameters;
+    const queryParams = event.queryStringParameters;
+    let customerRecord;
 
     owd.log(owd.getVersion(), "\nLib version (note: method = " + method + ")");
     owd.log(db.getVersion(), "\nDB version (note: log level = " + logLevel + ")", logLevel);
     owd.log(ch.getVersion(), "\nChannels version", logLevel);
 
+    //we have two scenarios: one where no authorizer is present and one where it is
+    // we have no authorizer when the customer is registering or we are sending
+    // a login link. In all other cases, we have an authorizer.
+    const segments = event.rawPath.split("/");
+    const action = segments[segments.length - 1];
+    if (!event.requestContext.authorizer) {
+      let email = queryParams.email;
+      if (!email) {
+        throw new Error("Email is missing");
+      }
+
+      email = email.trim()?.toLowerCase();
+      if (owd.isValidEmail(email) === false) {
+        throw new Error("Invalid email format");
+      }
+
+      if (isDisposable(email)) {
+        return owd.Response(412, { message: "Invalid or disposable email.", email: email });
+      }
+
+      const customer = await db.getCustomerByEmail(email);
+
+      //now let's act on actions
+      if (action === "register") {
+        //if we can't find the customer, create basic record and ask them to verify email
+        if (!customer) {
+          //a true registration
+          //we'll create a new customer record but set as unverified
+          const itemDefaults = getCustomerDefault(email);
+          const im = await db.putItem("db-customer", itemDefaults);
+          const r = await sendAuthEmail("verify", email, itemDefaults.pk.S, "48h", "VerifyAccount");
+          return owd.Response(202, { message: "Link verification required." });
+        }
+
+        //if the customer's been found and has already verified, tell them to login
+        if (customer && customer.isVerified.BOOL) {
+          return owd.Response(302, { message: "Already verified." });
+        }
+
+        if (customer && customer.isVerified.BOOL === false) {
+          const r = await sendAuthEmail("verify", email, customer.pk.S, "24h", "VerifyAccount");
+          return owd.Response(202, { message: "You are registered, but need to verify the link." });
+        }
+      } //end of register action
+
+      if (action === "authorize") {
+        if (customer && customer.isVerified.BOOL === true) {
+          let token = await sendAuthEmail("login", email, cid, generalExpiry, "LoginCode");
+          return owd.Response(200, { message: "code sent to your email, please click to login.", token: token });
+        } else {
+          return owd.Response(401, { message: "Customer not registered or verified." });
+        }
+      } //end of authorize action
+    } //end of no authorizer
+
+    //all other actions require an authorizer
     let auth = event.requestContext.authorizer.lambda;
 
     //the authorizer tells us whether to proceed or not
@@ -77,19 +134,18 @@ export const handler = async (event, context) => {
     }
 
     const isAuthorized = auth.isAuthorized;
-
     const { email, cid, isVerified } = auth.details;
 
     // Extract the variables based on the command
     let body;
 
-    owd.log(auth, "method: " + method + " / action:" + qsp.action ?? "none");
+    owd.log(auth, "method: " + method + " / action:" + queryParams.action ?? "none");
     //GET methods are for verify, issue, login, logout
     //We'll do some basic checks before we proceed
 
     //customer clicks on the verification link in email sent after registration.
     //if they're verified, we just log them in, else we send a verification email
-    if (method === "GET" && qsp.action === "verify") {
+    if (method === "POST" && action === "verify") {
       const jwt = await refreshToken(cid, generalExpiry); //TODO eventually make expiry 60m
       if (auth.isVerified) {
         return owd.Response(302, { message: "Already verified, redirecting." });
@@ -101,18 +157,8 @@ export const handler = async (event, context) => {
       return owd.Response(200, { message: "Verification succeeded." });
     }
 
-    //customer requests a login link
-    if (method === "GET" && qsp.action === "issue") {
-      if (isVerified) {
-        let token = await sendAuthEmail("login", email, cid, generalExpiry, "LoginCode");
-        return owd.Response(200, { message: "code sent to your email, please click to login.", token: token });
-      } else {
-        return owd.Response(401, { message: "Customer not registered or verified." });
-      }
-    }
-
     //customer clicks on a login link in email
-    if (method === "GET" && qsp.action === "login") {
+    if (method === "POST" && action === "login") {
       if (!isVerified) {
         return owd.Response(401, { message: "Either not registered or verified." });
       }
@@ -121,44 +167,16 @@ export const handler = async (event, context) => {
     }
 
     //customer clicks on a login link in email
-    if (method === "GET" && qsp.action === "logout") {
+    if (method === "POST" && action === "logout") {
       //we refresh token but don't share it.
       const token = await refreshToken(cid, generalExpiry);
       return owd.Response(200, { message: "Successful" });
     }
 
     //customer clicks on a login link in email
-    if (method === "GET" && qsp.action === "report") {
+    if (method === "GET" && queryParams.action === "report") {
       //TODO
       return owd.Response(501);
-    }
-
-    //a new customer just registered and passed through basic authorization
-    if (method === "POST") {
-      if (isDisposable(email)) {
-        return owd.Response(412, { message: "Invalid or disposable email.", email: email });
-      }
-
-      const customer = await db.getCustomerByEmail(email);
-
-      //if we can't find the customer, create basic record and ask them to verify email
-      if (!customer) {
-        //we'll create a new customer record but set as unverified
-        const itemDefaults = getCustomerDefault(email);
-        const im = await db.putItem("db-customer", itemDefaults);
-        const r = await sendAuthEmail("verify", email, itemDefaults.pk.S, "24h", "VerifyAccount");
-        return owd.Response(202, { message: "Link verification required." });
-      }
-
-      //if the customer's been found and has already verified, tell them to login
-      if (customer && customer.isVerified.BOOL) {
-        return owd.Response(302, { message: "Already verified." });
-      }
-
-      if (customer && customer.isVerified.BOOL === false) {
-        const r = await sendAuthEmail("verify", email, customer.pk.S, "24h", "VerifyAccount");
-        return owd.Response(202, { message: "You are registered, but need to verify the link." });
-      }
     }
 
     //customer updates their profile on the web

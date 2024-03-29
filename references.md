@@ -58,3 +58,6 @@ To add a new package, go to `node20` and to npm i after updating the `package.js
 
 1. making dynamoDB record comparisons without type strings: e.g., `if (email === record.email) instead of if (email === record.email.S)`
 2. sending empty objects in insert or update
+3. a 500 Internal Server error could mean:
+   1. Syntax error in the code! Check that first
+   2. Some function signature is incomplete (e.g., calling `owd.Response({...})` instead of `owd.Response(code, {...})`)

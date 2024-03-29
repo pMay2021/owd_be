@@ -2,19 +2,19 @@ import * as owd from "/opt/nodejs/node20/owd.mjs";
 import * as db from "/opt/nodejs/node20/owddb.mjs";
 
 // This is a Lambda function that is used to authorize the customer ID (cid) and email (optional)
+// v0.4 - modified customer API to use pathParameters 
 // v0.3 - heavy revision to support new customer API
 // v0.21 - revision of customer API updates
 // v0.1 - 2021-09-01 - Initial version
 
 const jwtSecretKey = "/JWT/general-access-token";
 
-export const handler = async (event, context, callback) => {
+export const handler = async (event, context) => {
   try {
     let cid, customerRecord;
     const method = event.requestContext.http.method;
     const qsp = event.queryStringParameters;
-
-    const allowedGetCommands = ["issue", "register", "verify", "login", "logout"];
+    const pathParams = event.pathParameters;
 
     //email is mandatory for all requests to customer API's
     let email = event.queryStringParameters?.email;
@@ -33,7 +33,7 @@ export const handler = async (event, context, callback) => {
     // no token is expected for these two commands
     // everything else going forward needs a token
     if (method === "POST") {
-      return resp({ email: email, isVerified: true, cid: " " });
+        return resp({ email: email, isVerified: true, cid: " " });
     }
 
     if (method === "GET" && qsp.action === "issue") {
