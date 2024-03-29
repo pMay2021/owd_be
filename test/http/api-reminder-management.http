@@ -35,7 +35,8 @@
 // key is required for all operations (AWS key)
 // response: 
 //- 201 Created
-//- 400 Bad Request
+//- 400 Bad Requests
+
 POST https://{{ep}}/reminders?key={{key}} HTTP/1.1
 Authorization: {{token}}
 content-type: application/json
