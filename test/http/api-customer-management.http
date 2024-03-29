@@ -28,7 +28,7 @@
 @ep = 77uxp6az23.execute-api.us-east-1.amazonaws.com/v1/api
 @email = owd.test.2@gmail.com
 @key = ABCDEFG
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiT1dELTIwMjQwMzI4LUc2QXl0Z050S2kyZkxDSSIsImlhdCI6MTcxMTU5Nzc2MiwiZXhwIjoxNzExNzcwNTYyfQ.JVkJQJP7xFtGBF5pKUvBsR2AE2IXZxsSxkfsqIdkFzk
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiT1dELTIwMjQwMzI5LU5zSEowZjI2Nk15d2lXcSIsImlhdCI6MTcxMTc0MzQ0MywiZXhwIjoxNzExOTE2MjQzfQ.rLVPg1JWqw0SK3bxv5F9f6fhKj664um8w_sP14YdrYM
 
 
 
@@ -125,7 +125,7 @@ content-type: application/json
 
 {
     "nickName": "Slartibafact2",
-    "cellNumber": "+1732-599-5930",
+    "cellNumber": "+1-732-599-5931",
     "countryCode": "us",
     "stateCode": "wa",
     "sendEmail": "true",
@@ -135,5 +135,5 @@ content-type: application/json
     "sendTopicUpdates": "false",
     "sendPush": "false",
     "ccOnByDefault": "true",
-    "emailCC": ["ghiga@shunga.com", "kiga@binga.com"]
+    "emailCC": ["peega@shunga.com", "kiga@binga.com", "blinga@singa.com"]
 }

@@ -3,6 +3,7 @@ import * as db from "/opt/nodejs/node20/owddb.mjs";
 
 // This core authorizer is used only where tokens are required
 // and sent in the authorization header
+// v0.3 - 2024-03-29 - minor fixes and exception for verify command
 // v0.2 - 2024-03-28 - minor fixes
 // v0.1 - 2024-03-27 - Initial version
 
@@ -48,8 +49,10 @@ export const handler = async (event, context) => {
     }
 
     // All commands directed here must have a verified customer to proceed
-    if (customerRecord.isVerified.BOOL === false) {
-      throw new Error("Unauthorized, please verify your account first");
+    let isVerified = customerRecord.isVerified.BOOL;
+    
+    if (isVerified===false && event.rawPath.includes("/verify")===false) {
+      throw new Error("Unauthorized, please verify your account: " + email + " first");
     }
 
     // we're ready to send the customer record downstream
@@ -57,7 +60,7 @@ export const handler = async (event, context) => {
       cid: cid,
       email: email,
       customerExists: true,
-      isVerified: true,
+      isVerified: isVerified,
       subscriptionEndDate: customerRecord.subscriptionEndDate?.S,
       subscriptionStatus: customerRecord.subscriptionStatus?.S,
       subscriptionType: customerRecord.subscriptionType?.S,

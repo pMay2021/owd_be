@@ -4,6 +4,7 @@
  
  * change log
  * ----------
+ * v1.2.1 - Retest and fixes for new API specs
  * v1.2.0 - API redesign for POST verbs
  * v1.1.2 - additional fixes
  * v1.1.1 - fixes and updates as part of testing, all methods working basic
@@ -15,7 +16,7 @@
  * v1.0.5 incorporating authorizer pre-checks
  * v1.0.3 verify works (register -> verify) + improved log levels
  * v1.0.2 with getParameter and register magic link works
- * v1.0.1 basic, with proper api mgmt
+ * v1.0.1 basic, with proper api mgmt.
  */
 
 import * as owd from "/opt/nodejs/node20/owd.mjs";
