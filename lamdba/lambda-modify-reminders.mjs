@@ -24,25 +24,23 @@ import * as db from "/opt/nodejs/node20/owddb.mjs";
  * v1.0.1 - basic version works through test and POST.
  */
 
-
 const goModify = process.env.DB_MODIFY === "TRUE";
 const logLevel = process.env.LOG_LEVEL || "DEBUG"; // Set to true to enable actual db operations
 
 export const handler = async (event, context) => {
-    const method = event.requestContext.http.method;
-    const qsp = event.queryStringParameters;
-    let auth = event.requestContext.authorizer.lambda;
+  const method = event.requestContext.http.method;
+  const qsp = event.queryStringParameters;
+  let auth = event.requestContext.authorizer.lambda;
 
-    //the authorizer tells us whether to proceed or not
-    if (!auth.isAuthorized) {
-      return owd.Response(401, auth.details);
-    }
+  //the authorizer tells us whether to proceed or not
+  if (!auth.isAuthorized) {
+    return owd.Response(401, auth.details);
+  }
 
+  const { email, cid, isVerified } = auth.details;
 
-    const { email, cid, isVerified } = auth.details;
+  // Extract the variables based on the command
 
-    // Extract the variables based on the command
-  
   const hour = new Date().getHours().toString().padStart(2, "0");
   const runDisplay = {
     libVersion: owd.getVersion(),
@@ -52,22 +50,20 @@ export const handler = async (event, context) => {
   };
 
   owd.info(runDisplay, "Execution Variables");
-  const body = event.body ? JSON.parse(event.body): {};
-  const { docId, expiresOn } = body ?? {docId: "", expiresOn: "0000-00-00"};
-  let obj = { status: 200, content: ""};
-  let {status, content} = obj;
+  const body = event.body ? JSON.parse(event.body) : {};
+  const { docId, expiresOn } = body ?? { docId: "", expiresOn: "0000-00-00" };
+  let obj = { status: 200, content: "" };
+  let { status, content } = obj;
 
   try {
-
     // Add a new parent due date
-    if (method === "POST") { 
-      
+    if (method === "POST") {
       owd.Response(200, "we came to post");
-      
+
       if (!cid || !expiresOn) {
         throw new Error("Missing required parameters (cid or expiresOn)");
       }
-      
+
       const customerDb = await db.getItem("db-customer", cid);
       if (!customerDb) {
         throw new Error(`Customer ${cid} not found`);
@@ -84,18 +80,18 @@ export const handler = async (event, context) => {
       if (!offsetArray || offsetArray.length === 0) {
         throw new Error("Invalid or empty reminder offset days");
       }
-      
-      const newDates = await createAndInsertNotices(offsetArray, expiresOn, docDb.pk.S + "|" + docDb.sk.S, body);
-      
-      const retJson = { notices: newDates };
-      status = 200; content = retJson;
-    }
 
+      const newDates = await createAndInsertNotices(offsetArray, expiresOn, docDb.pk.S + "|" + docDb.sk.S, body);
+
+      const retJson = { notices: newDates };
+      status = 200;
+      content = retJson;
+    }
 
     // Delete a notice; if parent then delete all children
     if (method === "DELETE") {
       const { id } = qsp;
-      
+
       if (!id) {
         throw new Error("Invalid or empty id");
       }
@@ -105,19 +101,28 @@ export const handler = async (event, context) => {
         throw new Error("No record for this id: " + id);
       }
 
-      if (cid !== noticeDb.cid?.S) {
+      if (cid !== noticeDb.cid.S) {
         throw new Error("Customer/notice mismatch; verification failed");
       }
 
-      // TODO: if it's a parent, then we delete all children
-
       if (goModify) {
-        const resp = await db.deleteItem("db-notices", id);
+        if (noticeDb.isParent.BOOL === false) {
+          const resp = await db.deleteItem("db-notices", id);
+          return owd.Response(200, "Deleted notice: " + id);
+        }
+
+        const children = await db.queryItems("db-notices", "parentKey", "pk", noticeDb.pk.S);
+        if (children.length > 0) {
+          for (const child of children) {
+            const resp = await db.deleteItem("db-notices", child.pk.S);
+          }
+        }
       } else {
         owd.debug("Skipping actual db operation");
       }
 
-      status = 200; content = "Deleted notice: " + id;
+      status = 200;
+      content = "Deleted notice: " + id;
     }
 
     // Update a child notice
@@ -132,7 +137,7 @@ export const handler = async (event, context) => {
         throw new Error("No record for this id: " + id);
       }
 
-      if(noticeDb.isParent?.BOOL) {
+      if (noticeDb.isParent?.BOOL) {
         throw new Error("Updating parent notice disallowed");
       }
 
@@ -141,21 +146,21 @@ export const handler = async (event, context) => {
       const noticeItem = {
         slot: { S: body.date + "#" + hour },
         addedOn: { S: new Date().toISOString() },
-        dueInDays: { N: daysRemainingObj.totalDaysDifference + "" }
+        dueInDays: { N: daysRemainingObj.totalDaysDifference + "" },
       };
-      
-      
+
       if (goModify) {
         const resp = await db.updateItem("db-notices", noticeItem, id);
-        status = 200; content = "Updated notice: " + id;
+        status = 200;
+        content = "Updated notice: " + id;
       } else {
         owd.debug("Skipping actual db operation");
-        status = 200; content = "Skipped update, but successful operation";
+        status = 200;
+        content = "Skipped update, but successful operation";
       }
     }
 
     return owd.Response(status, content);
-    
   } catch (error) {
     owd.error(error.message);
     return owd.Response(400, error.message);
@@ -194,11 +199,10 @@ export const handler = async (event, context) => {
         notes: { S: body.notes },
         dueInDays: { N: date.dueInDays },
       };
-      
-    
+
       owd.log(noticeItem, "Constructed notice entry for");
       if (goModify) {
-    //    throw new Error(`about to putItem: expiresOn: ${expiresOn}, docId: ${docId} and body: ${JSON.stringify(noticeItem)}`)
+        //    throw new Error(`about to putItem: expiresOn: ${expiresOn}, docId: ${docId} and body: ${JSON.stringify(noticeItem)}`)
         const resp = await db.putItem("db-notices", noticeItem);
         owd.info(resp, "Added notice to db");
       } else {
