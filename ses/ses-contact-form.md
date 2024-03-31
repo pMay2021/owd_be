@@ -8,6 +8,8 @@ From: {{email}}
 
 Name: {{name}}
 
+Reason: {{reason}}
+
 Message: {{message}}
 
 -----
