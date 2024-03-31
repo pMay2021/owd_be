@@ -1,0 +1,8 @@
+{
+  "Template": {
+    "TemplateName": "ContactForm",
+    "SubjectPart": "[Red Saffron] New form submission",
+    "TextPart": "New Submission from {{source}}\nSource: {{source}}\nDate: {{date}}\nFrom: {{email}}\nName: {{name}}\nMessage: {{message}}\n\nthis is the end of this form.\n",
+    "HtmlPart": "<p><strong>New Submission from {{source}}</strong></p>\n<p>Source: {{source}}</p>\n<p>Date: {{date}}</p>\n<p>From: {{email}}</p>\n<p>Name: {{name}}</p>\n<p>Message: {{message}}</p>\n<hr>\n<p>this is the end of this form.</p>\n"
+  }
+}
