@@ -28,7 +28,7 @@
 @ep = 77uxp6az23.execute-api.us-east-1.amazonaws.com/v1/api
 @email = owd.test.2@gmail.com
 @key = ABCDEFG
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiT1dELTIwMjQwMzI5LU5zSEowZjI2Nk15d2lXcSIsImlhdCI6MTcxMTc0MzQ0MywiZXhwIjoxNzExOTE2MjQzfQ.rLVPg1JWqw0SK3bxv5F9f6fhKj664um8w_sP14YdrYM
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoiT1dELTIwMjQwMzI5LU5zSEowZjI2Nk15d2lXcSIsImlhdCI6MTcxMTk5OTM2NSwiZXhwIjoxNzEyMTcyMTY1fQ.0Lwm_f31_hDkks4MR_t8ewiPBJ8Qq88cFJ9FDj4gcJ0
 
 
 
@@ -137,3 +137,11 @@ content-type: application/json
     "ccOnByDefault": "true",
     "emailCC": ["peega@shunga.com", "kiga@binga.com", "blinga@singa.com"]
 }
+
+###
+
+@cid = OWD-20240329-NsHJ0f266MywiWq
+
+GET https://{{ep}}/customers/this  HTTP/1.1
+content-type: application/json
+Authorization: {{token}}
