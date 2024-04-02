@@ -53,7 +53,7 @@ const sendAuthEmail = async (command, email, cid, withExpiry, templateName) => {
 
   const token = await refreshToken(cid, withExpiry);
 
-  const magicLink = `https://onwhichdate.com/action=${command}&email=${email}&token=${token}`;
+  const magicLink = `https://onwhichdate.com/${command}?email=${email}&token=${token}`;
   const data = { email: email, name: "Subscriber", magicLink: magicLink };
   const r = await ch.sendEmail(fromEmail, devEmail, templateName, data);
   owd.log(r, "sent email to " + devEmail + " with magic link: " + magicLink);
@@ -65,7 +65,9 @@ export const handler = async (event, context) => {
     // Extract the command from the API path
     const method = event.requestContext.http.method;
     const queryParams = event.queryStringParameters;
-    let customerRecord;
+    const pathParams = event.pathParams;
+
+    let cRec;
 
     owd.log(owd.getVersion(), "\nLib version (note: method = " + method + ")");
     owd.log(db.getVersion(), "\nDB version (note: log level = " + logLevel + ")", logLevel);
@@ -118,7 +120,7 @@ export const handler = async (event, context) => {
 
       if (action === "authorize") {
         if (customer && customer.isVerified.BOOL === true) {
-          let token = await sendAuthEmail("login", email, cid, generalExpiry, "LoginCode");
+          let token = await sendAuthEmail("login", email, customer.pk.S, generalExpiry, "LoginCode");
           return owd.Response(200, { message: "code sent to your email, please click to login.", token: token });
         } else {
           return owd.Response(401, { message: "Customer not registered or verified." });
@@ -140,7 +142,6 @@ export const handler = async (event, context) => {
     // Extract the variables based on the command
     let body;
 
-    owd.log(auth, "method: " + method + " / action:" + queryParams.action ?? "none");
     //GET methods are for verify, issue, login, logout
     //We'll do some basic checks before we proceed
 
@@ -175,9 +176,27 @@ export const handler = async (event, context) => {
     }
 
     //customer clicks on a login link in email
-    if (method === "GET" && queryParams.action === "report") {
-      //TODO
-      return owd.Response(501);
+    if (method === "GET" && action === "this") {
+      cRec = await db.getItem("db-customer", cid);
+
+      const item = {
+        email: cRec.email.S,
+        registered: cRec.registrationDate.S,
+        nickName: cRec.nickName.S,
+        cellNumber: cRec.cellNumber.S,
+        sendEmail: cRec.sendEmail.BOOL,
+        sendSMS: cRec.sendSMS.BOOL,
+        subscriptionType: cRec.subscriptionType.S,
+        subscriptionEndDate: cRec.subscriptionEndDate.S,
+        sendWhatsapp: cRec.sendWhatsapp.BOOL,
+        sendPush: cRec.sendPush.BOOL,
+        cc1: cRec.emailCC.SS[0],
+        cc2: cRec.emailCC.SS[1],
+        ccOnByDefault: cRec.ccOnByDefault.BOOL,
+        sendMarketingEmails: cRec.sendMarketingEmails.BOOL,
+        sendTopicUpdates: cRec.sendTopicUpdates.BOOL,
+      };
+      return owd.Response(200, item);
     }
 
     //customer updates their profile on the web
@@ -193,10 +212,10 @@ export const handler = async (event, context) => {
         cellNumber: { S: cellNumber },
         countryCode: { S: body.countryCode ?? itemDefaults.countryCode.S },
         stateCode: { S: body.stateCode ?? itemDefaults.stateCode.S },
-        sendEmail: { BOOL: body.sendEmail },
-        sendSMS: { BOOL: body.sendSMS },
-        sendWhatsapp: { BOOL: body.sendWhatsapp },
-        sendPush: { BOOL: body.sendPush },
+        sendEmail: { BOOL: body.sendEmail ?? true },
+        sendSMS: { BOOL: body.sendSMS ?? false },
+        sendWhatsapp: { BOOL: body.sendWhatsapp ?? false },
+        sendPush: { BOOL: body.sendPush ?? false },
         emailCC: { SS: body.emailCC ?? itemDefaults.emailCC.SS }, //for future implementation
         ccOnByDefault: { BOOL: body.ccOnByDefault ?? itemDefaults.ccOnByDefault.BOOL },
         sendMarketingEmails: { BOOL: body.sendMarketingEmails ?? itemDefaults.sendMarketingEmails.BOOL }, //occasional marketing emails
@@ -234,7 +253,7 @@ function getCustomerDefault(email, serviceName = "OWD") {
     email: { S: email },
     nickName: { S: "subscriber" },
     isVerified: { BOOL: false }, //this is critical. if 'no', then no further service available until they verify email to 'yes'
-    cellNumber: { S: "+10000000000" },
+    cellNumber: { S: "+11111111111" },
     countryCode: { S: "us" }, //default US, customer can change on their profile
     service: { S: serviceName }, //for future use where multiple services may be in the same database or same customers
     stateCode: { S: "na" },
