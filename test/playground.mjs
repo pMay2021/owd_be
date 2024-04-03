@@ -41,6 +41,44 @@ try {
 
   console.log(formattedTime);
 
+
+  const generateRandomEmails = (count) => {
+    const emails = [];
+    const characters = 'abcdefghijklmnopqrstuvwxyz012345678a.+9';
+    const domains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', '8mail.cf', '6ip.us', 'mailinator.com'
+  , '10minutemail.com', 'maildrop.cc', 'mailinator2.com', 'mailinator.net', 'mailinator.org', 'sogetthis.com', 'spamherelots.com'];
+
+    for (let i = 0; i < count; i++) {
+      let email = '';
+      const length = Math.floor(Math.random() * 10) + 5; // Random length between 5 and 14
+
+      for (let j = 0; j < length; j++) {
+        const randomChar = characters[Math.floor(Math.random() * characters.length)];
+        email += randomChar;
+      }
+
+      email += '@' + domains[Math.floor(Math.random() * domains.length)];
+      emails.push(email);
+    }
+
+    return emails;
+  };
+
+  const testEmails = generateRandomEmails(50);
+
+  for (const email of testEmails) {
+    const isValid = owd.isValidEmail(email);
+    if(!isValid) {
+      console.log(`${email} is invalid`);
+      continue;
+    }
+    const isDisposable = owd.isDisposableEmail(email);
+    if(isDisposable) {
+      console.log(`${email} is disposable`);
+      continue;
+    }
+  }
+
   const customerId = 'xQuitter'; // Your 15-character customer ID
 } catch (error) {
   console.error(error.message);
