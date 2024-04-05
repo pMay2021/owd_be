@@ -6,6 +6,7 @@ import * as db from "/opt/nodejs/node20/owddb.mjs";
  *
  * Change log:
  * ----------
+ * v1.0.3 - GET /parents/{parentId} fixes to also send name, category, notes to client
  * v1.0.2 - GET /parents/{parentId} works
  * v1.0.1 - GET /parents works
  */
@@ -54,20 +55,28 @@ export const handler = async (event) => {
       throw Error("No data for customer: " + cid);
     }
 
-    const ret = items
-      .map((n) => {
-        const i = {
-          doc: n.documentId?.S,
-          expires: n.originalExpiryOn?.S,
-          dueIn: n.dueInDays?.N,
-          id: n.pk?.S,
-          parentId: n.parentKey?.S,
-          type: n.type?.S,
-        };
+    const ret = [];
 
-        return i;
-      })
-      .filter((f) => f.type === "owd#notice");
+    for (const n of items) {
+      if (n.type.S != "owd#notice") continue;
+
+      const [docPk, docSk] = n.documentId.S.split("|");
+      const docDb = await db.getItem("db-document", docPk, docSk);
+
+      const i = {
+        doc: n.documentId.S,
+        category: docDb.category.S,
+        name: docDb.documentName.S,
+        notes: n.notes?.S,
+        expires: n.originalExpiryOn?.S,
+        dueIn: n.dueInDays?.N,
+        id: n.pk?.S,
+        parentId: n.parentKey?.S,
+        type: n.type?.S,
+      };
+
+      ret.push(i);
+    }
 
     return owd.Response(200, ret);
   } catch (error) {
