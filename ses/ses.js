@@ -36,9 +36,9 @@ const textContent = dom.window.document.body.textContent || "";
 const templateName = path
   .basename(options.file, ".md")
   .replace(/^ses-/, "") // Remove "ses_" prefix
-  .replace(/[-_]+/g, " ") // Replace dashes and underscores with spaces
-  .replace(/(?:^|\s)\S/g, (match) => match.toUpperCase()) // Capitalize each word
-  .replace(/\W/g, ""); // Remove special characters
+  .replace(/(?:^|\s)\S/g, (match) => match.toLowerCase()) // Capitalize each word
+
+  console.log("creating templateName: ", templateName);
 
 // Create SES template
 const sesTemplate = {
