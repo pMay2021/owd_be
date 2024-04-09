@@ -18,3 +18,21 @@ content-type: application/json
     }
 }
 
+###
+
+POST https://{{ep}}/api/services/add-notice?key={{key}} HTTP/1.1
+content-type: application/json
+
+{
+    "to": "m.venugopal@gmail.com",
+    "templateName": "owd-reminder-record",
+    "data": {
+        "event": "Passport",
+        "date": "12th Fri 2027",
+        "notes": "For Jenny",
+        "name": "subscriber",
+        "entries": "12th Fri 2204<br>29th Oct 2029<br>"
+    }
+}
+
+

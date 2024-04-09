@@ -17,7 +17,6 @@ const goModify = process.env.DB_MODIFY;
 
 const sendTemplatedEmail = async (to, data, templateName) => {
   const r = await ch.sendEmail(fromEmail, devEmail, templateName, data);
-  owd.log(r, "sent email to " + devEmail + " with magic link: " + magicLink);
 };
 
 export const handler = async (event, context) => {
@@ -25,16 +24,11 @@ export const handler = async (event, context) => {
     // Extract the command from the API path
     const method = event.requestContext.http.method;
     const queryParams = event.queryStringParameters;
-    const command = event.pathParams.command;
+    const command = event.pathParameters.command;
 
     owd.log(owd.getVersion(), "\nLib version (note: method = " + method + ")");
     owd.log(db.getVersion(), "\nDB version (note: log level = " + logLevel + ")", logLevel);
     owd.log(ch.getVersion(), "\nChannels version", logLevel);
-
-    email = email.trim()?.toLowerCase();
-    if (owd.isValidEmail(email) === false) {
-      throw new Error("Invalid email format");
-    }
 
     if (method === "POST") {
       const body = JSON.parse(event.body);
@@ -43,9 +37,19 @@ export const handler = async (event, context) => {
       }
 
       if (command === "templated-email") {
-        const r = await sendTemplatedEmail(body.to, body.data, templateName);
+        const email = body.to.trim()?.toLowerCase();
+        if (owd.isValidEmail(email) === false) {
+          throw new Error("Invalid email format");
+        }
+
+        const r = await sendTemplatedEmail(body.to, body.data, body.templateName);
         return owd.Response(202, { message: "Sent." });
       }
+
+      if (command === "add-notice") {
+        return owd.Response(200, { message: "add-notices" });
+      }
+
       return owd.Response(200);
     }
   } catch (error) {
