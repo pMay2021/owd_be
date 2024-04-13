@@ -2,8 +2,6 @@ Hi {{name}},
 
 **A gentle reminder on an upcoming expiry/deadline**
 
-Your item:
-
 **{{documentName}}** is due in _{{dueInDays}}_, on **{{dueDate}}.**
 
 Notes: {{notes}}

@@ -14,7 +14,7 @@ const sendTemplatedEmail = async (to, data, templateName) => {
 export const handler = async (event) => {
   console.log("received queue call", event.Records[0].body);
   const data = {
-    event: "passport",
+    documentName: "passport",
     name: "dummy",
     date: "2024-10-12",
     notes: "new notes 2:" + event.Records[0].body,
