@@ -71,3 +71,10 @@ To add a new package, go to `node20` and to npm i after updating the `package.js
 4. a 500 Internal Server error could mean:
    1. Syntax error in the code! Check that first
    2. Some function signature is incomplete (e.g., calling `owd.Response({...})` instead of `owd.Response(code, {...})`)
+
+
+# OWD COM
+
+## Create docDb search file (run it from ./owdcom root)
+
+`npx astro db execute ./src/lib/generate-docDb-local.mjs --remote`
