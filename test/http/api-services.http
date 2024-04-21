@@ -35,4 +35,12 @@ content-type: application/json
     }
 }
 
+###
+
+GET https://{{ep}}/api/services/get-s3-file?name=travel-passport-aZC.md&key={{key}} HTTP/1.1
+content-type: application/json
+
+{
+}
+
 
