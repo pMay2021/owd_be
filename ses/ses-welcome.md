@@ -2,7 +2,7 @@ Dear valued member,
 
 Thank you for confirming your email. Welcome to OnWhichDate! We're excited to have you on board. 
 
-For your reference, your registered email is: `{{email}}`
+Your registered email is: `{{email}}`
 
 **Password-Free Access for Enhanced Security**
 At OnWhichDate, we prioritize your security and convenience. That's why we've introduced a password-free login system. Simply visit our [login page](https://onwhichdate.com/login), enter your email, and a secure magic link will be sent to you. Click it, and you're in. This link is your key to quick and safe access, eliminating the hassle of remembering and entering passwords.

@@ -1,7 +1,7 @@
 {
   "Template": {
     "TemplateName": "owd-reminder-record",
-    "SubjectPart": "[OWD] Your reminder record",
+    "SubjectPart": "🗓 [OWD] You added {{event}} due on {{shortDate}}",
     "TextPart": "Dear {{name}},\nThis is the record for the reminder you recently created:\n{{event}}: expiring on {{date}}.\nNotes: {{notes}}\nYou will receive notifications on:\n{{entries}}\nsincerely, \nteam OWD.\nhttps://onwhichdate.com\nPlease do not reply to this email. It is from an unmonitored inbox.\n",
     "HtmlPart": "<p>Dear {{name}},</p>\n<p>This is the record for the reminder you recently created:</p>\n<p><strong>{{event}}</strong>: expiring on {{date}}.</p>\n<p>Notes: {{notes}}</p>\n<p>You will receive notifications on:</p>\n<p>{{entries}}</p>\n<p>sincerely, </p>\n<p>team OWD.</p>\n<p><a href=\"https://onwhichdate.com\">https://onwhichdate.com</a></p>\n<p><em>Please do not reply to this email. It is from an unmonitored inbox.</em></p>\n"
   }
