@@ -1,0 +1,8 @@
+{
+  "Template": {
+    "TemplateName": "owd-verify-email",
+    "SubjectPart": "✅ [OWD] Please verify your email.",
+    "TextPart": "Action needed: Please Verify Your Email Address.\nDear {{name}},\nWe're excited to have you on board! To get started, there's just one small step left: verifying: {{email}} \nPlease confirm your email by clicking link below.\n{{verificationLink}}\nBest regards,\nThe team at OWD.\nPlease do not reply to this email. It is from an unmonitored inbox.\n",
+    "HtmlPart": "<p><strong>Action needed: Please Verify Your Email Address.</strong></p>\n<p>Dear {{name}},</p>\n<p>We&#39;re excited to have you on board! To get started, there&#39;s just one small step left: verifying: {{email}} </p>\n<p><strong>Please confirm your email by clicking link below.</strong></p>\n<p>{{verificationLink}}</p>\n<p>Best regards,\nThe team at OWD.</p>\n<p><em>Please do not reply to this email. It is from an unmonitored inbox.</em></p>\n"
+  }
+}
