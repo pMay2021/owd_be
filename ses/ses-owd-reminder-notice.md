@@ -2,13 +2,9 @@ Hi {{name}},
 
 **A gentle reminder on an upcoming expiry/deadline**
 
-**{{documentName}}** is due in _{{dueInDays}}_, on **{{dueDate}}.**
+**{{documentName}}** is due _{{dueInDaysDisplay}}_, on **{{dueDate}}.**
 
 Notes: {{notes}}
-
-Want to mark it as complete or make changes? > [click here](\{\{editMagicLink\}\}) 
-
-_(note: link expires in 1 hour.)_
 
 Best regards,
 
