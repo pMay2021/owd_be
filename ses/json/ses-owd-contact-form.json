@@ -1,0 +1,8 @@
+{
+  "Template": {
+    "TemplateName": "owd-contact-form",
+    "SubjectPart": "📩 [OWD] New submission for: {{source}}",
+    "TextPart": "New Submission from {{source}}\nSource: {{source}}\nDate: {{date}}\nFrom: {{email}}\nName: {{name}}\nReason: {{reason}}\nMessage: {{message}}\nLang: {{lang}}\nUserAgent: {{userAgent}}\n\nthis is the end of this form.\n",
+    "HtmlPart": "<p><strong>New Submission from {{source}}</strong></p>\n<p>Source: {{source}}</p>\n<p>Date: {{date}}</p>\n<p>From: {{email}}</p>\n<p>Name: {{name}}</p>\n<p>Reason: {{reason}}</p>\n<p>Message: {{message}}</p>\n<p>Lang: {{lang}}</p>\n<p>UserAgent: {{userAgent}}</p>\n<hr>\n<p>this is the end of this form.</p>\n"
+  }
+}

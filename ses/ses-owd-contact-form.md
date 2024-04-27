@@ -12,6 +12,10 @@ Reason: {{reason}}
 
 Message: {{message}}
 
+Lang: {{lang}}
+
+UserAgent: {{userAgent}}
+
 -----
 this is the end of this form.
 
