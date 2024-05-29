@@ -2,7 +2,7 @@
  
  * change log
  * ----------
- * v0.1 this code works for sending simple and raw email with attachment
+ * v1.0.1 basic works with simple and raw email with cc and calendar attachments
  */
 
 import {
@@ -62,14 +62,14 @@ const sendRawEmail = async (sendParams) => {
 From: ${sendParams.from}
 To: ${sendParams.to}
 Subject: ${sendParams.subject}
-Cc: ${sendParams.cc?.length > 0 ? sendParams.cc.join(", ") : ""},
+Cc: ${sendParams.cc?.length > 0 ? sendParams.cc.join(", ") : ""}
 MIME-Version: 1.0
 Content-Type: multipart/mixed; boundary="${boundary}"
 
 --${boundary}
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/html; charset=UTF-8
 
-Let us send a dummy content
+${sendParams.content}
 
 --${boundary}
 Content-Type: text/calendar; name="eznudge.ics"
@@ -83,6 +83,8 @@ ${sendParams.attachmentContentBase64}
 `;
 
 //let data = Buffer.from(rawEmail.replace(/\r\n/g, "\n").replace(/\n/g, "\r\n"), 'utf8');
+
+console.log("raw mime = ", rawEmail);
 let data = Buffer.from(rawEmail.trim(), 'utf8');
 
   const params = {
