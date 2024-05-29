@@ -78,3 +78,23 @@ To add a new package, go to `node20` and to npm i after updating the `package.js
 ## Create docDb search file (run it from ./owdcom root)
 
 `npx astro db execute ./src/lib/generate-docDb-local.mjs --remote`
+
+
+# Nudge dispatch architecture
+
+(API Gateway) /api/nudge --> call this to send the notice; the notice has content for email, SMS etc.
+
+api/nudge  -> lambda-process-nudge (extracts the incoming nudge JSON, does some basic validation/security test, and then puts its on the SQS nudge-queue; we can eventually split this to transaction and batch)
+
+nudge-q -> lambda-send-nudge sends it out the SES call or via Twilio SMS eventually as needed.
+
+So, summary:
+
+1) for transactional messages - i.e., where eznudge.com needs to send on a case-basis;
+
+/api/nudge --> lambda-process-nudge --> nudge-q --> lambda-send-nudge
+
+2) for core event dispatches - i.e., processing events on X schedule,
+
+Event Bridge --> lambda-fetch-nudges (calls eznudge.com/api/fetch) --> nudge-q --> lambda-send-nudge
+

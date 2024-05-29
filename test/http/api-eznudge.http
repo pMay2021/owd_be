@@ -1,0 +1,16 @@
+// sample values
+@ep = jrmxpz3t39.execute-api.us-east-1.amazonaws.com/v1
+@email = owd.test.2@gmail.com
+@key = a7Fk4Lz8gR2Bv3cM1QjT9s5Dk8Xn6Hp4UyJ2LrV3PqWz8Nx1E
+
+POST https://{{ep}}/api/nudge HTTP/1.1
+content-type: application/json
+
+{
+    "to": "m.venugopal@gmail.com",
+    "from": "no-reply@eznudge.com",
+    "subject": "[eznudge] from API: You have a new reminder for 2029",
+    "content": "<h2>Your passport expires in 2 years days</h2><br/><p>Your document expires on 12th Aug 2028. Please prepare. <a href='https://google.com'>USCIS</a> <br/> Regards, EZ Nudge </p>",
+    "key": "a7Fk4Lz8gR2Bv3cM1QjT9s5Dk8Xn6Hp4UyJ2LrV3PqWz8Nx1E"
+}
+
