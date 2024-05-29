@@ -9,8 +9,11 @@ content-type: application/json
 {
     "to": "m.venugopal@gmail.com",
     "from": "no-reply@eznudge.com",
+    "cc": ["cc-one@eznudge.com", "cc-two@eznudge.com"],
     "subject": "[eznudge] from API: You have a new reminder for 2029",
-    "content": "<h2>Your passport expires in 2 years days</h2><br/><p>Your document expires on 12th Aug 2028. Please prepare. <a href='https://google.com'>USCIS</a> <br/> Regards, EZ Nudge </p>",
+    "content": "<h2>Your license expires in 5 years days</h2><br/><p>Your document expires on 12th Aug 2028. Please prepare. <a href='https://google.com'>USCIS</a> <br/> Regards, EZ Nudge </p>",
+    "attachmentName": "eznudge.ics",
+    "attachmentContentBase64": "QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL1lvdXIgT3JnYW5pemF0aW9u Ly9Zb3VyIFByb2R1Y3QvL0VODQpCRUdJTjpWRVZFUlVFDQpVSUQ6MTIzNDU2Nzg5MEBleGFtcGxl LmNvbQ0KRFRTVEFNUDo2MDAwMDAwMDAwMDBaDQpEVFNUQVJUO1ZBTFVFPURBVEU6MjAyODA4MjUNClNVTU1B Ulk6UGFzc3BvcnQgRXhwaXJ5DQpERVNDUklQVElPTjpZb3VyIHBhc3Nwb3J0IGV4cGlyZXMgb24gdGhpcyBk YXRlLg0KRU5EOlZFVkVOVAUDUADDFsVNFFdSWDSVCBRM5OHP",
     "key": "a7Fk4Lz8gR2Bv3cM1QjT9s5Dk8Xn6Hp4UyJ2LrV3PqWz8Nx1E"
 }
 
