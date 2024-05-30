@@ -2,13 +2,10 @@
  
  * change log
  * ----------
- * v1.0.1 basic works with simple and raw email with cc and calendar attachments
+ * v1.0.1 basic, with proper api mgmt.
  */
 
-import {
-  SESv2Client,
-  SendEmailCommand,
-} from "@aws-sdk/client-sesv2";
+import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 //import nodemailer from "nodemailer";
 
 const ses = new SESv2Client({ region: "us-east-1" });
@@ -54,38 +51,7 @@ const sendEmail = async (fromAddress, toAddress, cc, subject, content) => {
 };
 
 const sendRawEmail = async (sendParams) => {
-  log(`Sending raw email:\n ${JSON.stringify(sendParams)}`);
-
-  const boundary = "----=_NextPart_001_0000";
-
-  const rawEmail = `
-From: ${sendParams.from}
-To: ${sendParams.to}
-Subject: ${sendParams.subject}
-Cc: ${sendParams.cc?.length > 0 ? sendParams.cc.join(", ") : ""}
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="${boundary}"
-
---${boundary}
-Content-Type: text/html; charset=UTF-8
-
-${sendParams.content}
-
---${boundary}
-Content-Type: text/calendar; name="eznudge.ics"
-Content-Description: eznudge.ics
-Content-Disposition: attachment; filename="eznudge.ics"
-Content-Transfer-Encoding: base64
-
-${sendParams.attachmentContentBase64}
-
---${boundary}--
-`;
-
-//let data = Buffer.from(rawEmail.replace(/\r\n/g, "\n").replace(/\n/g, "\r\n"), 'utf8');
-
-console.log("raw mime = ", rawEmail);
-let data = Buffer.from(rawEmail.trim(), 'utf8');
+  let data = Buffer.from(sendParams.content, "utf8");
 
   const params = {
     FromEmailAddress: sendParams.from,
@@ -94,16 +60,17 @@ let data = Buffer.from(rawEmail.trim(), 'utf8');
       CcAddresses: sendParams.cc?.length > 0 ? sendParams.cc : [],
     },
     Content: {
-       Raw: {
-        Data: data
+      Raw: {
+        Data: data,
       },
     },
   };
-  
 
   try {
-    const sesResponse = await ses.send(new SendEmailCommand(params));
-    console.log("Email sent successfully:", sesResponse);
+    if (sendParams.sendEmail === true) {
+      const sesResponse = await ses.send(new SendEmailCommand(params));
+      console.log("Email sent successfully:", sesResponse);
+    }
     return Response(200, "Email sent successfully", "Email sent successfully");
   } catch (error) {
     console.error("Error sending email:", error);
@@ -128,24 +95,26 @@ function Response(code, title = "response", message = "none") {
 
 export const handler = async (event, context) => {
   try {
-    const body = JSON.parse(event.Records[0].body);
-    log("received body: ", body);
+    for (const record of event.Records) {
+      const body = JSON.parse(record.body);
+      log("received body: ", body);
 
-    if (!body) {
-      console.log("no body to parse");
-      throw new Error("Invalid/missing body");
+      if (!body) {
+        log("no body to parse");
+        throw new Error("Invalid/missing body");
+      }
+
+      const r = await sendRawEmail(body);
+      //const email = body.to.trim()?.toLowerCase();
+      // const r = await sendEmail(
+      //   "no-reply@eznudge.com",
+      //   devEmail,
+      //   body.cc,
+      //   body.subject,
+      //   body.content
+      // );
+      log("email sent: response = ", r);
     }
-
-    const email = body.to.trim()?.toLowerCase();
-    const r = await sendRawEmail(body);
-    // const r = await sendEmail(
-    //   "no-reply@eznudge.com",
-    //   devEmail,
-    //   body.cc,
-    //   body.subject,
-    //   body.content
-    // );
-    console.log(r);
     return Response(202, "Email sent.", "email sent");
   } catch (error) {
     log("hit an error:  " + error.message);
